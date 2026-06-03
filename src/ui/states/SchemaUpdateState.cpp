@@ -1,16 +1,18 @@
 #include "ui/states/SchemaUpdateState.h"
 #include "ui/AppController.h"
+#include "download/DatabaseService.h"
 #include "imgui.h"
 
 void SchemaUpdateState::Render(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: SCHEMA UPDATE");
+    ImGui::Spacing();
+    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: UPDATING DATABASE SCHEMA");
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Text("Downloading and updating the JSON schema...");
+    ImGui::TextWrapped("Downloading Spansh schema file...");
     ImGui::Spacing();
 
-    float progress = controller->GetSchemaProgress();
-    ImGui::ProgressBar(progress, ImVec2(-1.0f, 25.0f));
+    auto& db = DatabaseService::GetInstance();
+    ImGui::ProgressBar(db.GetSchemaProgress(), ImVec2(-1.0f, 30.0f));
 }

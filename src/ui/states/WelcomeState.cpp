@@ -1,7 +1,7 @@
 #include "ui/states/WelcomeState.h"
 #include "ui/AppController.h"
+#include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
-#include "ui/states/MainAppState.h"
 #include "imgui.h"
 
 void WelcomeState::Render(AppController* controller)
@@ -13,14 +13,15 @@ void WelcomeState::Render(AppController* controller)
     ImGui::Text("Welcome, Commander.");
     ImGui::Spacing();
 
-    if (!controller->GetCurrentFilePath().empty())
+    const std::string& currentPath = DatabaseService::GetInstance().GetCurrentFilePath();
+    if (!currentPath.empty())
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess, "[+] Spansh dump file detected: %s", controller->GetCurrentFilePath().c_str());
+        ImGui::TextColored(controller->GetTheme().textSuccess, "[+] Spansh dump file detected: %s", currentPath.c_str());
         ImGui::Spacing();
         ImGui::Spacing();
         if (ImGui::Button("ENTER APPLICATION >", ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightLarge())))
         {
-            controller->TransitionTo(std::make_unique<MainAppState>());
+            DatabaseService::GetInstance().EnterApplicationFlow();
         }
         return;
     }
@@ -30,7 +31,7 @@ void WelcomeState::Render(AppController* controller)
     ImGui::Spacing();
     if (ImGui::Button("CONFIGURE & DOWNLOAD >", ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightLarge())))
     {
-        controller->FetchOnlineSizes();
+        DatabaseService::GetInstance().FetchOnlineSizes();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
     }
 }

@@ -4,6 +4,8 @@
 #include <thread>
 #include <vector>
 #include <chrono>
+#include <cctype>
+#include <string>
 
 HttpDownloader::HttpDownloader() : isCancelled(false), totalDownloadedBytes(0), totalFileLength(0)
 {
@@ -36,7 +38,67 @@ size_t HttpDownloader::WriteCallback(void* ptr, size_t size, size_t nmemb, void*
     return written;
 }
 
-double HttpDownloader::GetContentLength(const std::string& url)
+int HttpDownloader::ProgressCallback(void* clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+    std::atomic<bool>* cancelFlag = static_cast<std::atomic<bool>*>(clientp);
+    if (cancelFlag && cancelFlag->load())
+    {
+        return 1;
+    }
+    return 0;
+}
+
+namespace
+{
+    struct ContentRangeCapture
+    {
+        double totalBytes = -1.0;
+        bool hasContentRange = false;
+    };
+
+    size_t ContentRangeHeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata)
+    {
+        size_t totalSize = size * nitems;
+        ContentRangeCapture* capture = static_cast<ContentRangeCapture*>(userdata);
+        if (capture && totalSize > 14)
+        {
+            std::string line(buffer, totalSize);
+            std::string lower;
+            lower.reserve(line.size());
+            for (char c : line) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+
+            if (lower.rfind("content-range:", 0) == 0)
+            {
+                size_t slash = line.find('/');
+                if (slash != std::string::npos)
+                {
+                    std::string tail = line.substr(slash + 1);
+                    size_t end = tail.find_first_of("\r\n ");
+                    if (end != std::string::npos) tail = tail.substr(0, end);
+                    try 
+                    { 
+                        capture->totalBytes = std::stod(tail); 
+                        capture->hasContentRange = true;
+                    } 
+                    catch (...) {}
+                }
+            }
+            else if (lower.rfind("content-length:", 0) == 0 && !capture->hasContentRange)
+            {
+                std::string tail = line.substr(15);
+                try { capture->totalBytes = std::stod(tail); } catch (...) {}
+            }
+        }
+        return totalSize;
+    }
+
+    size_t DiscardWriteCallback(void*, size_t size, size_t nmemb, void*)
+    {
+        return size * nmemb;
+    }
+}
+
+double HttpDownloader::GetContentLength(const std::string& url, std::atomic<bool>* cancelFlag)
 {
     CURL* curl = curl_easy_init();
     if (!curl)
@@ -44,19 +106,37 @@ double HttpDownloader::GetContentLength(const std::string& url)
         return -1.0;
     }
 
+    ContentRangeCapture capture;
+
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback);
+    curl_easy_setopt(curl, CURLOPT_RANGE, "0-0");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, DiscardWriteCallback);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, ContentRangeHeaderCallback);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &capture);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 8L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-    double contentLength = -1.0;
-    if (curl_easy_perform(curl) == CURLE_OK)
+    if (cancelFlag)
     {
-        curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &contentLength);
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, ProgressCallback);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, cancelFlag);
+    }
+
+    CURLcode result = curl_easy_perform(curl);
+    double contentLength = capture.totalBytes;
+
+    if (result == CURLE_OK && contentLength < 0.0)
+    {
+        curl_off_t lenT = -1;
+        curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &lenT);
+        if (lenT > 0) contentLength = static_cast<double>(lenT);
     }
 
     curl_easy_cleanup(curl);
@@ -118,7 +198,7 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
     isCancelled = false;
     totalDownloadedBytes = 0;
 
-    double contentLength = GetContentLength(url);
+    double contentLength = GetContentLength(url, &isCancelled);
     if (contentLength <= 0.0)
     {
         NotifyDownloadFailed("Failed to retrieve file size.");

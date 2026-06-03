@@ -14,7 +14,9 @@ public:
     void Cancel();
     bool IsCancelled() const;
 
-    static double GetContentLength(const std::string& url);
+    static double GetContentLength(const std::string& url, std::atomic<bool>* cancelFlag = nullptr);
+
+    static int ProgressCallback(void* clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 
 private:
     struct DownloadChunk

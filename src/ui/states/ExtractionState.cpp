@@ -1,40 +1,47 @@
 #include "ui/states/ExtractionState.h"
 #include "ui/AppController.h"
+#include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
 #include "imgui.h"
 
 void ExtractionState::Render(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: DATABASE PROCESSING");
+    ImGui::Spacing();
+    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: PROCESS DATABASE FILES");
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (controller->IsExtracting())
+    auto& db = DatabaseService::GetInstance();
+
+    ImGui::Text("Decompressing & indexing Spansh dump (streaming)...");
+    ImGui::ProgressBar(db.GetExtractionProgress(), ImVec2(-1.0f, 30.0f));
+
+    double remaining = db.GetExtractionTimeRemaining();
+    if (remaining >= 0.0)
     {
-        ImGui::Text("Extracting database file (Decompressing Gzip)...");
-        ImGui::Spacing();
-        float progress = controller->GetExtractionProgress();
-        ImGui::ProgressBar(progress, ImVec2(-1.0f, 25.0f));
-    }
-    else if (controller->IsValidating())
-    {
-        ImGui::Text("Validating JSON format and Spansh schema...");
-        ImGui::Spacing();
-        float progress = controller->GetValidationProgress();
-        ImGui::ProgressBar(progress, ImVec2(-1.0f, 25.0f));
+        int minutes = static_cast<int>(remaining) / 60;
+        int seconds = static_cast<int>(remaining) % 60;
+        if (minutes > 0)
+        {
+            ImGui::Text("Estimated time remaining: %dm %ds", minutes, seconds);
+        }
+        else
+        {
+            ImGui::Text("Estimated time remaining: %ds", seconds);
+        }
     }
     else
     {
-        ImGui::Text("Preparing processing...");
+        ImGui::Text("Estimated time remaining: Calculating...");
     }
 
     ImGui::Spacing();
-    ImGui::Separator();
     ImGui::Spacing();
 
     if (ImGui::Button("Cancel", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
-        controller->CancelExtraction();
+        db.CancelExtraction();
+        db.CancelIndexing();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
     }
 }

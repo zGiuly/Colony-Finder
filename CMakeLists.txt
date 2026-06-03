@@ -53,6 +53,19 @@ else()
   set(CURL_USE_OPENSSL ON CACHE BOOL "" FORCE)
 endif()
 
+set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
+set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(ZLIBNG_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(WITH_GTEST OFF CACHE BOOL "" FORCE)
+set(WITH_OPTIM ON CACHE BOOL "" FORCE)
+set(WITH_NEW_STRATEGIES ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  zlib
+  GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
+  GIT_TAG 2.2.1
+)
+FetchContent_MakeAvailable(zlib)
+
 FetchContent_Declare(
   curl
   GIT_REPOSITORY https://github.com/curl/curl.git
@@ -61,16 +74,20 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(curl)
 
 FetchContent_Declare(
-  zlib
-  URL https://github.com/madler/zlib/archive/refs/tags/v1.3.1.zip
-)
-FetchContent_MakeAvailable(zlib)
-
-FetchContent_Declare(
   json
   URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
 )
 FetchContent_MakeAvailable(json)
+
+set(SIMDJSON_JUST_LIBRARY ON CACHE BOOL "" FORCE)
+set(SIMDJSON_BUILD_STATIC_LIB ON CACHE BOOL "" FORCE)
+set(SIMDJSON_DEVELOPER_MODE OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  simdjson
+  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+  GIT_TAG v3.10.1
+)
+FetchContent_MakeAvailable(simdjson)
 
 find_package(OpenGL REQUIRED)
 
@@ -102,6 +119,29 @@ add_executable (ColonyFinder
     "src/download/GzipDecompressor.h"
     "src/download/JsonStreamValidator.cpp"
     "src/download/JsonStreamValidator.h"
+    "src/download/DynamicSaxValidator.h"
+    "src/download/PipeStreamBuf.cpp"
+    "src/download/PipeStreamBuf.h"
+    "src/download/StreamingProcessor.cpp"
+    "src/download/StreamingProcessor.h"
+    "src/download/DatabaseService.cpp"
+    "src/download/DatabaseService.h"
+    "src/download/DatabaseObserver.h"
+    "src/search/CompositeJsonSax.h"
+    "src/search/SimdjsonIndexer.cpp"
+    "src/search/SimdjsonIndexer.h"
+    "src/download/LineSink.cpp"
+    "src/download/LineSink.h"
+    "src/search/SystemIndex.h"
+    "src/search/IndexProgressStreamBuf.h"
+    "src/search/IndexBuilderSax.cpp"
+    "src/search/IndexBuilderSax.h"
+    "src/search/IndexBuilder.cpp"
+    "src/search/IndexBuilder.h"
+    "src/search/SearchEngine.cpp"
+    "src/search/SearchEngine.h"
+    "src/ui/WindowManager.cpp"
+    "src/ui/WindowManager.h"
     "src/ui/AppController.cpp"
     "src/ui/AppController.h"
     "src/ui/AppTheme.h"
@@ -110,6 +150,8 @@ add_executable (ColonyFinder
     "src/ui/SettingsObserver.h"
     "src/ui/SettingsService.cpp"
     "src/ui/SettingsService.h"
+    "src/ui/SystemMemory.cpp"
+    "src/ui/SystemMemory.h"
     "src/ui/states/IAppState.h"
     "src/ui/states/WelcomeState.cpp"
     "src/ui/states/WelcomeState.h"
@@ -119,6 +161,8 @@ add_executable (ColonyFinder
     "src/ui/states/DownloadingState.h"
     "src/ui/states/ExtractionState.cpp"
     "src/ui/states/ExtractionState.h"
+    "src/ui/states/IndexingState.cpp"
+    "src/ui/states/IndexingState.h"
     "src/ui/states/SchemaUpdateState.cpp"
     "src/ui/states/SchemaUpdateState.h"
     "src/ui/states/MainAppState.cpp"
@@ -130,9 +174,9 @@ add_executable (ColonyFinder
 target_include_directories(ColonyFinder PRIVATE src)
 
 if (WIN32)
-  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlibstatic nlohmann_json ole32 uuid)
+  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlibstatic nlohmann_json simdjson ole32 uuid)
 else()
-  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlib nlohmann_json)
+  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlib nlohmann_json simdjson)
 endif()
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

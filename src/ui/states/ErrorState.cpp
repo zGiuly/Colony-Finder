@@ -1,6 +1,7 @@
 #include "ui/states/ErrorState.h"
 #include "ui/AppController.h"
 #include "ui/states/SelectDownloadState.h"
+#include "download/DatabaseService.h"
 #include "imgui.h"
 
 void ErrorState::Render(AppController* controller)
@@ -14,7 +15,7 @@ void ErrorState::Render(AppController* controller)
 
     if (ImGui::Button("< RETURN TO SETUP", ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightMedium())))
     {
-        controller->FetchOnlineSizes();
+        DatabaseService::GetInstance().FetchOnlineSizes();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
     }
 }

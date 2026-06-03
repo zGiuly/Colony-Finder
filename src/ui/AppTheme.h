@@ -10,6 +10,7 @@ struct AppTheme
     ImVec4 bgDark = ImVec4(0.04f, 0.04f, 0.05f, 0.95f);
     ImVec4 bgPanel = ImVec4(0.08f, 0.08f, 0.10f, 1.0f);
     ImVec4 textNormal = ImVec4(0.9f, 0.9f, 0.9f, 1.0f);
+    ImVec4 textMuted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
     ImVec4 textAlert = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
     ImVec4 textSuccess = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
     ImVec4 border = ImVec4(0.6f, 0.25f, 0.0f, 0.5f);
@@ -22,7 +23,7 @@ struct AppTheme
         style.Colors[ImGuiCol_ChildBg] = theme.bgPanel;
         style.Colors[ImGuiCol_PopupBg] = theme.bgDark;
         style.Colors[ImGuiCol_Border] = theme.border;
-        style.Colors[ImGuiCol_FrameBg] = theme.bgPanel;
+        style.Colors[ImGuiCol_FrameBg] = theme.bgDark;
         style.Colors[ImGuiCol_FrameBgHovered] = theme.orangeMuted;
         style.Colors[ImGuiCol_FrameBgActive] = theme.orangePrimary;
         style.Colors[ImGuiCol_TitleBg] = theme.bgPanel;
@@ -47,6 +48,6 @@ struct AppTheme
         style.ItemSpacing = ImVec2(16.0f, 16.0f);
         style.ItemInnerSpacing = ImVec2(8.0f, 6.0f);
         style.WindowBorderSize = 1.0f;
-        style.FrameBorderSize = 0.0f;
+        style.FrameBorderSize = 1.0f;
     }
 };

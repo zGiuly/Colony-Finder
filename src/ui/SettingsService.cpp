@@ -6,7 +6,8 @@
 
 SettingsService::SettingsService()
     : downloadDir("."),
-      searchDir(".")
+      searchDir("."),
+      bufferSizeMb(16)
 {
 }
 
@@ -42,6 +43,10 @@ void SettingsService::Load()
         {
             searchDir = j["search_dir"].get<std::string>();
         }
+        if (j.contains("buffer_size_mb"))
+        {
+            bufferSizeMb = j["buffer_size_mb"].get<int>();
+        }
         NotifyObservers();
     }
     catch (...)
@@ -62,6 +67,7 @@ void SettingsService::Save()
         nlohmann::json j;
         j["download_dir"] = downloadDir;
         j["search_dir"] = searchDir;
+        j["buffer_size_mb"] = bufferSizeMb;
         f << j.dump(4);
     }
     catch (...)
@@ -87,6 +93,17 @@ void SettingsService::SetSearchDir(const std::string& path)
         return;
     }
     searchDir = path;
+    Save();
+    NotifyObservers();
+}
+
+void SettingsService::SetBufferSizeMb(int val)
+{
+    if (bufferSizeMb == val)
+    {
+        return;
+    }
+    bufferSizeMb = val;
     Save();
     NotifyObservers();
 }

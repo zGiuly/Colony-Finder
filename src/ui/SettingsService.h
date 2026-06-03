@@ -17,6 +17,9 @@ public:
     const std::string& GetSearchDir() const { return searchDir; }
     void SetSearchDir(const std::string& path);
 
+    int GetBufferSizeMb() const { return bufferSizeMb; }
+    void SetBufferSizeMb(int val);
+
     void AddObserver(ISettingsObserver* observer);
     void RemoveObserver(ISettingsObserver* observer);
 
@@ -31,5 +34,6 @@ private:
 
     std::string downloadDir;
     std::string searchDir;
+    int bufferSizeMb;
     std::vector<ISettingsObserver*> observers;
 };
