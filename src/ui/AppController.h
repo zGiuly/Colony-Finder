@@ -2,13 +2,15 @@
 
 #include "download/DatabaseObserver.h"
 #include "ui/SettingsObserver.h"
+#include "update/UpdateObserver.h"
 #include "ui/AppTheme.h"
 #include <string>
 #include <memory>
+#include <atomic>
 
 class IAppState;
 
-class AppController : public IDatabaseObserver, public ISettingsObserver
+class AppController : public IDatabaseObserver, public ISettingsObserver, public IUpdateObserver
 {
     friend class WindowManager;
 
@@ -40,6 +42,16 @@ public:
 
     void OnSettingsChanged(const std::string& downloadDir, const std::string& searchDir) override;
 
+    void OnUpdateAvailable(const std::string& latestVersion, const std::string& downloadUrl) override;
+    void OnUpdateNotAvailable() override;
+    void OnUpdateCheckFailed(const std::string& error) override;
+    void OnUpdateDownloadProgress(double progress) override;
+    void OnUpdateReady(const std::string& newBinaryPath) override;
+    void OnUpdateFailed(const std::string& error) override;
+
+    bool IsUpdateReady() const { return updateReady.load(); }
+    double GetUpdateDownloadProgress() const { return updateProgress.load(); }
+
     void TransitionTo(std::unique_ptr<IAppState> nextState);
 
     const AppTheme& GetTheme() const { return theme; }
@@ -59,4 +71,7 @@ private:
     AppTheme theme;
     std::string errorMessage;
     std::unique_ptr<class WindowManager> windowManager;
+
+    std::atomic<bool> updateReady{false};
+    std::atomic<double> updateProgress{0.0};
 };

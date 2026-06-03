@@ -11,6 +11,10 @@
 #include "ui/states/SchemaUpdateState.h"
 #include "ui/states/MainAppState.h"
 #include "ui/states/ErrorState.h"
+#include "ui/states/UpdateAvailableState.h"
+#include "update/UpdateService.h"
+#include "update/GithubUpdateChecker.h"
+#include "Version.h"
 #include "imgui.h"
 #include <filesystem>
 
@@ -25,12 +29,14 @@ AppController::AppController()
 {
     DatabaseService::GetInstance().AddObserver(this);
     SettingsService::GetInstance().AddObserver(this);
+    UpdateService::GetInstance().AddObserver(this);
 }
 
 AppController::~AppController()
 {
     DatabaseService::GetInstance().RemoveObserver(this);
     SettingsService::GetInstance().RemoveObserver(this);
+    UpdateService::GetInstance().RemoveObserver(this);
 }
 
 bool AppController::Initialize()
@@ -48,6 +54,16 @@ bool AppController::Initialize()
     }
 
     AppTheme::Apply(theme);
+
+#ifdef _WIN32
+    const std::string updateAsset = "ColonyFinder-windows-x64.exe";
+#else
+    const std::string updateAsset = "ColonyFinder-linux-x64";
+#endif
+    UpdateService::GetInstance().Configure(
+        std::make_unique<GithubUpdateChecker>("zGiuly", "Colony-Finder", updateAsset),
+        COLONYFINDER_VERSION_STRING);
+    UpdateService::GetInstance().CheckAsync();
 
     std::filesystem::path schemaPath = std::filesystem::path(SettingsService::GetInstance().GetDownloadDir()) / "galaxy.schema.json";
     if (!std::filesystem::exists(schemaPath))
@@ -172,4 +188,40 @@ void AppController::OnIndexOutdated()
 void AppController::OnSettingsChanged(const std::string& downloadDirVal, const std::string& searchDirVal)
 {
     DatabaseService::GetInstance().SetPaths(downloadDirVal, searchDirVal);
+}
+
+void AppController::OnUpdateAvailable(const std::string& latestVersion, const std::string& downloadUrl)
+{
+    if (!dynamic_cast<WelcomeState*>(currentState.get()))
+    {
+        return;
+    }
+    updateReady = false;
+    updateProgress = 0.0;
+    TransitionTo(std::make_unique<UpdateAvailableState>(latestVersion, downloadUrl));
+}
+
+void AppController::OnUpdateNotAvailable()
+{
+}
+
+void AppController::OnUpdateCheckFailed(const std::string&)
+{
+}
+
+void AppController::OnUpdateDownloadProgress(double progress)
+{
+    updateProgress = progress;
+}
+
+void AppController::OnUpdateReady(const std::string&)
+{
+    updateProgress = 1.0;
+    updateReady = true;
+}
+
+void AppController::OnUpdateFailed(const std::string& error)
+{
+    errorMessage = error;
+    TransitionTo(std::make_unique<ErrorState>());
 }

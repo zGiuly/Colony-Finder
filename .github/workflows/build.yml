@@ -51,7 +51,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ColonyFinder-linux
-          path: build/ColonyFinder
+          path: |
+            build/ColonyFinder
+            build/colony_updater
 
   build-windows:
     runs-on: windows-latest
@@ -82,7 +84,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ColonyFinder-windows
-          path: build/Release/ColonyFinder.exe
+          path: |
+            build/Release/ColonyFinder.exe
+            build/Release/colony_updater.exe
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -106,8 +110,13 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist
-          mv linux/ColonyFinder dist/ColonyFinder-linux-x64
-          mv windows/ColonyFinder.exe dist/ColonyFinder-windows-x64.exe
+          cp linux/ColonyFinder dist/ColonyFinder-linux-x64
+          cp linux/colony_updater dist/colony_updater-linux-x64
+          cp windows/ColonyFinder.exe dist/ColonyFinder-windows-x64.exe
+          cp windows/colony_updater.exe dist/colony_updater-windows-x64.exe
+          chmod +x dist/ColonyFinder-linux-x64 dist/colony_updater-linux-x64
+          (cd dist && zip ColonyFinder-linux-x64.zip ColonyFinder-linux-x64 colony_updater-linux-x64)
+          (cd dist && zip ColonyFinder-windows-x64.zip ColonyFinder-windows-x64.exe colony_updater-windows-x64.exe)
 
       - name: ClamAV malware scan
         uses: dell/common-github-actions/malware-scanner@main
@@ -149,5 +158,9 @@ jobs:
           files: |
             dist/ColonyFinder-linux-x64
             dist/ColonyFinder-windows-x64.exe
+            dist/colony_updater-linux-x64
+            dist/colony_updater-windows-x64.exe
+            dist/ColonyFinder-linux-x64.zip
+            dist/ColonyFinder-windows-x64.zip
           body_path: vt_notes.md
           generate_release_notes: true

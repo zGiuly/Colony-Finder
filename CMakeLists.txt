@@ -5,7 +5,13 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("ColonyFinder")
+project ("ColonyFinder" VERSION 1.0.1)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h
+    @ONLY
+)
 
 include(FetchContent)
 
@@ -178,9 +184,21 @@ add_executable (ColonyFinder
     "src/ui/states/MainAppState.h"
     "src/ui/states/ErrorState.cpp"
     "src/ui/states/ErrorState.h"
+    "src/ui/states/UpdateAvailableState.cpp"
+    "src/ui/states/UpdateAvailableState.h"
+    "src/update/UpdateObserver.h"
+    "src/update/UpdateSubject.cpp"
+    "src/update/UpdateSubject.h"
+    "src/update/IUpdateChecker.h"
+    "src/update/GithubUpdateChecker.cpp"
+    "src/update/GithubUpdateChecker.h"
+    "src/update/UpdateService.cpp"
+    "src/update/UpdateService.h"
+    "src/update/UpdaterLauncher.cpp"
+    "src/update/UpdaterLauncher.h"
 )
 
-target_include_directories(ColonyFinder PRIVATE src)
+target_include_directories(ColonyFinder PRIVATE src ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 if (WIN32)
   target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlibstatic nlohmann_json simdjson ole32 uuid)
@@ -191,3 +209,15 @@ endif()
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ColonyFinder PROPERTY CXX_STANDARD 20)
 endif()
+
+add_executable(colony_updater "src/updater/main.cpp")
+set_property(TARGET colony_updater PROPERTY CXX_STANDARD 20)
+if (WIN32)
+  set_target_properties(colony_updater PROPERTIES WIN32_EXECUTABLE FALSE)
+endif()
+
+add_custom_command(TARGET ColonyFinder POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:colony_updater>
+        $<TARGET_FILE_DIR:ColonyFinder>/$<TARGET_FILE_NAME:colony_updater>
+)
