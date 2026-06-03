@@ -1,51 +1,37 @@
 #pragma once
 #include "ui/states/IAppState.h"
+#include "ui/components/FilterPanel.h"
+#include "ui/components/ResultsPanel.h"
 #include "search/SearchEngine.h"
 #include "search/AsyncSearchService.h"
 #include "search/SearchObserver.h"
-#include <vector>
 #include <memory>
 
-class MainAppState : public IAppState, public ISearchObserver
+class MainAppState : public IAppState,
+                     public ISearchObserver,
+                     public IFilterPanelListener
 {
 public:
     MainAppState();
     ~MainAppState() override;
+
     void Render(AppController* controller) override;
 
     void OnSearchStarted() override;
     void OnSearchCompleted(const std::vector<SearchResult>& results) override;
 
+    void OnRunQuery(const SearchFilters& filters) override;
+    void OnBackRequested() override;
+
 private:
+    void EnsureEngineInitialized();
+
     SearchEngine searchEngine;
     std::unique_ptr<AsyncSearchService> asyncSearch;
-    SearchFilters filters;
-    std::vector<SearchResult> results;
+
+    FilterPanel filterPanel;
+    ResultsPanel resultsPanel;
+
+    AppController* currentController;
     bool isEngineInitialized;
-    bool searchTriggered;
-    bool searchRunning;
-    int currentPage;
-
-    char systemQueryBuf[128];
-    char sourceSystemBuf[128];
-
-    uint64_t minPopBuf;
-    uint64_t maxPopBuf;
-
-    bool starO;
-    bool starB;
-    bool starA;
-    bool starF;
-    bool starG;
-    bool starK;
-    bool starM;
-    bool starLTY;
-    bool starNeutron;
-    bool starBlackHole;
-    bool starWhiteDwarf;
-
-    bool bodyEnable[8];
-    int bodyMin[8];
-    int bodyMax[8];
-    bool bodyLandable;
 };
