@@ -130,7 +130,7 @@ jobs:
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
-          request_rate: 4
+          request_rate: 1
           files: |
             dist/ColonyFinder-linux-x64
             dist/ColonyFinder-windows-x64.exe
