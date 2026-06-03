@@ -36,6 +36,7 @@ public:
     void OnIndexingProgress(float progress) override;
     void OnIndexingCompleted() override;
     void OnIndexingFailed(const std::string& error) override;
+    void OnIndexOutdated() override;
 
     void OnSettingsChanged(const std::string& downloadDir, const std::string& searchDir) override;
 

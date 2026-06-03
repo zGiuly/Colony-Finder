@@ -35,6 +35,7 @@ public:
     void CancelIndexing();
 
     void EnterApplicationFlow();
+    void ConfirmIndexRegeneration();
 
     bool IsBusy() const { return isBusy.load(); }
     double GetOnlineSize1Month() const { return onlineSize1Month.load(); }
@@ -86,6 +87,10 @@ private:
     void NotifyIndexingProgress(float progress);
     void NotifyIndexingCompleted();
     void NotifyIndexingFailed(const std::string& error);
+    void NotifyIndexOutdated();
+
+    enum class PendingRegen { None, Extraction, Indexing };
+    PendingRegen pendingRegen = PendingRegen::None;
 
     std::vector<IDatabaseObserver*> observers;
     std::shared_ptr<HttpDownloader> downloader;

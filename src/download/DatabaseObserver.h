@@ -23,4 +23,6 @@ public:
     virtual void OnIndexingProgress(float progress) = 0;
     virtual void OnIndexingCompleted() = 0;
     virtual void OnIndexingFailed(const std::string& error) = 0;
+
+    virtual void OnIndexOutdated() = 0;
 };

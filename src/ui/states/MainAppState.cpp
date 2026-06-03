@@ -108,7 +108,7 @@ void MainAppState::Render(AppController* controller)
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Checkbox("Player Colonized Only", &filters.colonizedOnly);
+    ImGui::Checkbox("Colonized Only", &filters.colonizedOnly);
     ImGui::Spacing();
 
     ImGui::Checkbox("Filter Population", &filters.filterPopulation);

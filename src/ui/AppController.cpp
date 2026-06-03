@@ -7,7 +7,7 @@
 #include "ui/states/SelectDownloadState.h"
 #include "ui/states/DownloadingState.h"
 #include "ui/states/ExtractionState.h"
-#include "ui/states/IndexingState.h"
+#include "ui/states/IndexOutdatedState.h"
 #include "ui/states/SchemaUpdateState.h"
 #include "ui/states/MainAppState.h"
 #include "ui/states/ErrorState.h"
@@ -148,13 +148,9 @@ void AppController::OnDatabaseFailed(const std::string& error)
 
 void AppController::OnIndexingProgress(float)
 {
-    if (dynamic_cast<ExtractionState*>(currentState.get()))
+    if (!dynamic_cast<ExtractionState*>(currentState.get()))
     {
-        return;
-    }
-    if (!dynamic_cast<IndexingState*>(currentState.get()))
-    {
-        TransitionTo(std::make_unique<IndexingState>());
+        TransitionTo(std::make_unique<ExtractionState>());
     }
 }
 
@@ -166,6 +162,11 @@ void AppController::OnIndexingFailed(const std::string& error)
 {
     errorMessage = error;
     TransitionTo(std::make_unique<ErrorState>());
+}
+
+void AppController::OnIndexOutdated()
+{
+    TransitionTo(std::make_unique<IndexOutdatedState>());
 }
 
 void AppController::OnSettingsChanged(const std::string& downloadDirVal, const std::string& searchDirVal)

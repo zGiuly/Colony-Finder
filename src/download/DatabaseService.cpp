@@ -4,8 +4,10 @@
 #include "download/JsonStreamValidator.h"
 #include "download/StreamingProcessor.h"
 #include "search/IndexBuilder.h"
+#include "search/SystemIndex.h"
 #include "ui/SettingsService.h"
 #include <filesystem>
+#include <fstream>
 #include <thread>
 #include <algorithm>
 #include <chrono>
@@ -13,6 +15,17 @@
 constexpr int ThreadCount = 1;
 constexpr double ErrorSizeCode = -2.0;
 constexpr double DefaultInitSize = -1.0;
+
+static bool IsIndexCurrent(const std::filesystem::path& idxPath)
+{
+    std::ifstream in(idxPath, std::ios::binary);
+    if (!in.is_open()) return false;
+    SystemIndex::Header header{};
+    in.read(reinterpret_cast<char*>(&header), sizeof(header));
+    if (in.gcount() != static_cast<std::streamsize>(sizeof(header))) return false;
+    if (std::string(header.magic) != "CFIDX") return false;
+    return header.version == SystemIndex::Version;
+}
 
 DatabaseService::DatabaseService()
     : downloader(std::make_shared<HttpDownloader>()),
@@ -389,10 +402,15 @@ void DatabaseService::EnterApplicationFlow()
         jsonPath.replace_extension("");
         std::filesystem::path idxPath = jsonPath;
         idxPath.replace_extension(".idx");
-        if (std::filesystem::exists(idxPath))
+        if (std::filesystem::exists(idxPath) && IsIndexCurrent(idxPath))
         {
             currentFilePath = jsonPath.string();
             NotifyDatabaseReady(currentFilePath);
+        }
+        else if (std::filesystem::exists(idxPath))
+        {
+            pendingRegen = PendingRegen::Extraction;
+            NotifyIndexOutdated();
         }
         else
         {
@@ -403,14 +421,47 @@ void DatabaseService::EnterApplicationFlow()
     {
         std::filesystem::path idxPath = path;
         idxPath.replace_extension(".idx");
-        if (std::filesystem::exists(idxPath))
+        if (std::filesystem::exists(idxPath) && IsIndexCurrent(idxPath))
         {
             NotifyDatabaseReady(currentFilePath);
+        }
+        else if (std::filesystem::exists(idxPath))
+        {
+            pendingRegen = PendingRegen::Indexing;
+            NotifyIndexOutdated();
         }
         else
         {
             StartIndexing();
         }
+    }
+}
+
+void DatabaseService::ConfirmIndexRegeneration()
+{
+    std::filesystem::path path(currentFilePath);
+    std::filesystem::path idxPath = path;
+    if (path.extension() == ".gz")
+    {
+        idxPath.replace_extension("");
+        idxPath.replace_extension(".idx");
+    }
+    else
+    {
+        idxPath.replace_extension(".idx");
+    }
+    std::error_code ec;
+    std::filesystem::remove(idxPath, ec);
+
+    PendingRegen action = pendingRegen;
+    pendingRegen = PendingRegen::None;
+    if (action == PendingRegen::Extraction)
+    {
+        StartExtractionAndValidation();
+    }
+    else if (action == PendingRegen::Indexing)
+    {
+        StartIndexing();
     }
 }
 
@@ -557,6 +608,14 @@ void DatabaseService::NotifyIndexingFailed(const std::string& error)
     for (auto observer : observers)
     {
         observer->OnIndexingFailed(error);
+    }
+}
+
+void DatabaseService::NotifyIndexOutdated()
+{
+    for (auto observer : observers)
+    {
+        observer->OnIndexOutdated();
     }
 }
 

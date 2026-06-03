@@ -231,7 +231,7 @@ bool SearchEngine::Search(const SearchFilters& filters, std::vector<SearchResult
     {
         const auto& rec = records[i];
 
-        if (filters.colonizedOnly && (rec.flags & SystemIndex::System_PlayerColonized) == 0)
+        if (filters.colonizedOnly && rec.population == 0)
         {
             continue;
         }
