@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <cmath>
 
 constexpr float FilterPanelWidth = 320.0f;
 constexpr size_t MaxResultsToReturn = 5000;
@@ -16,6 +17,29 @@ constexpr float MaxDistanceLy = 100000.0f;
 constexpr float DefaultMaxDistanceLy = 100.0f;
 constexpr int MinBodiesDefault = 0;
 constexpr int MaxBodiesDefault = 100;
+
+static void DrawSpinner(float radius, float thickness, ImU32 color)
+{
+    ImVec2 cursor = ImGui::GetCursorScreenPos();
+    float pad = 4.0f;
+    ImGui::Dummy(ImVec2(radius * 2.0f + pad * 2.0f, radius * 2.0f + pad * 2.0f));
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 center(cursor.x + radius + pad, cursor.y + radius + pad);
+
+    constexpr float Pi = 3.14159265358979323846f;
+    float t = static_cast<float>(ImGui::GetTime());
+    const int segments = 40;
+    float startAngle = t * 5.0f;
+    float arcLength = Pi * 1.5f;
+
+    dl->PathClear();
+    for (int i = 0; i <= segments; ++i)
+    {
+        float a = startAngle + (arcLength * static_cast<float>(i) / static_cast<float>(segments));
+        dl->PathLineTo(ImVec2(center.x + std::cos(a) * radius, center.y + std::sin(a) * radius));
+    }
+    dl->PathStroke(color, ImDrawFlags_None, thickness);
+}
 
 static void FormatPopulation(uint64_t pop, char* buf, size_t buflen)
 {
@@ -27,9 +51,28 @@ static void FormatPopulation(uint64_t pop, char* buf, size_t buflen)
     std::snprintf(buf, buflen, "%.2fT", pop / 1000000000000.0);
 }
 
+MainAppState::~MainAppState()
+{
+    if (asyncSearch) asyncSearch->RemoveObserver(this);
+}
+
+void MainAppState::OnSearchStarted()
+{
+    searchRunning = true;
+}
+
+void MainAppState::OnSearchCompleted(const std::vector<SearchResult>& res)
+{
+    results = res;
+    searchRunning = false;
+    searchTriggered = true;
+    currentPage = 0;
+}
+
 MainAppState::MainAppState()
     : isEngineInitialized(false),
       searchTriggered(false),
+      searchRunning(false),
       currentPage(0),
       minPopBuf(0),
       maxPopBuf(100000000000ULL),
@@ -63,8 +106,12 @@ void MainAppState::Render(AppController* controller)
         std::filesystem::path indexPath = jsonPath;
         indexPath.replace_extension(".idx");
         searchEngine.Initialize(indexPath.string());
+        asyncSearch = std::make_unique<AsyncSearchService>(searchEngine);
+        asyncSearch->AddObserver(this);
         isEngineInitialized = true;
     }
+
+    if (asyncSearch) asyncSearch->Poll();
 
     ImGui::TextColored(controller->GetTheme().orangePrimary, ":: COMMANDER'S CONSOLE - SYSTEM SEARCH");
     ImGui::Separator();
@@ -157,10 +204,10 @@ void MainAppState::Render(AppController* controller)
             if (bodyEnable[i])
             {
                 ImGui::Indent();
-                ImGui::PushItemWidth(80.0f);
-                ImGui::InputInt("Min", &bodyMin[i]);
+                ImGui::PushItemWidth(60.0f);
+                ImGui::InputInt("Min", &bodyMin[i], 0, 0);
                 ImGui::SameLine();
-                ImGui::InputInt("Max", &bodyMax[i]);
+                ImGui::InputInt("Max", &bodyMax[i], 0, 0);
                 ImGui::PopItemWidth();
                 if (bodyMin[i] < 0) bodyMin[i] = 0;
                 if (bodyMax[i] > 255) bodyMax[i] = 255;
@@ -175,6 +222,7 @@ void MainAppState::Render(AppController* controller)
     ImGui::Spacing();
     ImGui::Spacing();
 
+    ImGui::BeginDisabled(searchRunning);
     if (ImGui::Button("RUN QUERY", ImVec2(-1.0f, controller->GetTheme().buttonHeightMedium)))
     {
         filters.systemNameQuery = systemQueryBuf;
@@ -202,14 +250,14 @@ void MainAppState::Render(AppController* controller)
         }
         filters.filterLandable = bodyLandable;
 
-        searchEngine.Search(filters, results, MaxResultsToReturn);
-        searchTriggered = true;
-        currentPage = 0;
+        asyncSearch->Submit(filters, MaxResultsToReturn);
     }
+    ImGui::EndDisabled();
     ImGui::Spacing();
 
     if (ImGui::Button("Back to Setup", ImVec2(-1.0f, controller->GetTheme().buttonHeightSmall)))
     {
+        asyncSearch.reset();
         searchEngine.Shutdown();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
     }
@@ -219,7 +267,13 @@ void MainAppState::Render(AppController* controller)
 
     ImGui::BeginChild("ResultPanel", ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysUseWindowPadding);
     
-    if (!searchTriggered)
+    if (searchRunning)
+    {
+        ImGui::TextColored(controller->GetTheme().orangeActive, "Searching...");
+        ImGui::Spacing();
+        DrawSpinner(18.0f, 3.5f, ImGui::GetColorU32(controller->GetTheme().orangePrimary));
+    }
+    else if (!searchTriggered)
     {
         ImGui::TextColored(controller->GetTheme().textNormal, "Configure the filters on the left panel and click 'RUN QUERY' to locate systems.");
     }

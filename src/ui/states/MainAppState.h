@@ -1,21 +1,29 @@
 #pragma once
 #include "ui/states/IAppState.h"
 #include "search/SearchEngine.h"
+#include "search/AsyncSearchService.h"
+#include "search/SearchObserver.h"
 #include <vector>
+#include <memory>
 
-class MainAppState : public IAppState
+class MainAppState : public IAppState, public ISearchObserver
 {
 public:
     MainAppState();
-    ~MainAppState() override = default;
+    ~MainAppState() override;
     void Render(AppController* controller) override;
+
+    void OnSearchStarted() override;
+    void OnSearchCompleted(const std::vector<SearchResult>& results) override;
 
 private:
     SearchEngine searchEngine;
+    std::unique_ptr<AsyncSearchService> asyncSearch;
     SearchFilters filters;
     std::vector<SearchResult> results;
     bool isEngineInitialized;
     bool searchTriggered;
+    bool searchRunning;
     int currentPage;
 
     char systemQueryBuf[128];
