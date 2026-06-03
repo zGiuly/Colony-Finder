@@ -5,7 +5,7 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("ColonyFinder" VERSION 1.0.1)
+project ("ColonyFinder" VERSION 1.0.2)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Version.h.in

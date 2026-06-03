@@ -27,12 +27,16 @@ namespace
     int ProgressCb(void* clientp, double dltotal, double dlnow, double, double)
     {
         DownloadCtx* ctx = static_cast<DownloadCtx*>(clientp);
-        if (!ctx)
+        if (!ctx || !ctx->svc)
         {
             return 0;
         }
         ctx->totalBytes = dltotal;
         ctx->receivedBytes = dlnow;
+        if (dltotal > 0.0)
+        {
+            ctx->svc->EmitDownloadProgress(dlnow / dltotal);
+        }
         return 0;
     }
 }
@@ -155,12 +159,17 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ctx);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 8L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, ProgressCb);
     curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &ctx);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1024L);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "ColonyFinder-Updater");
 
     CURLcode rc = curl_easy_perform(curl);
@@ -175,6 +184,8 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
 
     if (rc != CURLE_OK)
     {
+        std::error_code ec;
+        std::filesystem::remove(tmpFile, ec);
         NotifyUpdateFailed(std::string("download failed: ") + curl_easy_strerror(rc));
         working = false;
         return;

@@ -19,6 +19,8 @@ public:
 
     bool HasPendingUpdate() const { return pendingNewBinary.load() != nullptr; }
 
+    void EmitDownloadProgress(double progress) { NotifyUpdateDownloadProgress(progress); }
+
 private:
     UpdateService();
     ~UpdateService();
