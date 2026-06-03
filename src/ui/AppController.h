@@ -6,11 +6,13 @@
 #include <atomic>
 #include <memory>
 
+#include "ui/SettingsObserver.h"
+
 class HttpDownloader;
 class IAppState;
 struct GLFWwindow;
 
-class AppController : public IDownloadObserver
+class AppController : public IDownloadObserver, public ISettingsObserver
 {
 public:
     AppController();
@@ -23,6 +25,7 @@ public:
     void OnDownloadProgress(double progress, double speed) override;
     void OnDownloadCompleted(const std::string& filePath) override;
     void OnDownloadFailed(const std::string& error) override;
+    void OnSettingsChanged(const std::string& downloadDir, const std::string& searchDir) override;
 
     void CheckLocalDump();
     void StartDownload(const std::string& url);
@@ -39,10 +42,10 @@ public:
     float GetButtonHeightMedium() const { return 40.0f; }
 
     const std::string& GetDownloadDir() const { return downloadDir; }
-    void SetDownloadDir(const std::string& path) { downloadDir = path; }
+    void SetDownloadDir(const std::string& path);
 
     const std::string& GetSearchDir() const { return searchDir; }
-    void SetSearchDir(const std::string& path) { searchDir = path; }
+    void SetSearchDir(const std::string& path);
 
     double GetOnlineSize1Month() const { return onlineSize1Month.load(); }
     double GetOnlineSizeFull() const { return onlineSizeFull.load(); }
@@ -54,6 +57,17 @@ public:
 
     const std::string& GetErrorMessage() const { return errorMessage; }
     void SetErrorMessage(const std::string& error) { errorMessage = error; }
+
+    void StartSchemaUpdate();
+    float GetSchemaProgress() const { return schemaProgress.load(); }
+    bool IsSchemaUpdating() const { return isUpdatingSchema.load(); }
+
+    void StartExtractionAndValidation();
+    float GetExtractionProgress() const { return extractionProgress.load(); }
+    float GetValidationProgress() const { return validationProgress.load(); }
+    bool IsExtracting() const { return isExtracting.load(); }
+    bool IsValidating() const { return isValidating.load(); }
+    void CancelExtraction();
 
 private:
     void RenderUI();
@@ -75,4 +89,13 @@ private:
     std::atomic<double> onlineSize1Month;
     std::atomic<double> onlineSizeFull;
     std::atomic<bool> isFetchingSizes;
+
+    std::atomic<float> schemaProgress;
+    std::atomic<bool> isUpdatingSchema;
+
+    std::atomic<float> extractionProgress;
+    std::atomic<float> validationProgress;
+    std::atomic<bool> isExtracting;
+    std::atomic<bool> isValidating;
+    std::atomic<bool> cancelExtractionFlag;
 };

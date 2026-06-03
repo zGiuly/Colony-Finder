@@ -50,6 +50,8 @@ double HttpDownloader::GetContentLength(const std::string& url)
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 8L);
 
     double contentLength = -1.0;
     if (curl_easy_perform(curl) == CURLE_OK)
@@ -63,17 +65,29 @@ double HttpDownloader::GetContentLength(const std::string& url)
 
 void HttpDownloader::DownloadChunkFunc(DownloadChunk chunk)
 {
-    FILE* fp = fopen(chunk.path.c_str(), "rb+");
+    FILE* fp = nullptr;
+    const char* mode = (chunk.downloader->totalFileLength == (chunk.end + 1 - chunk.start)) ? "wb" : "rb+";
+#ifdef _WIN32
+    if (fopen_s(&fp, chunk.path.c_str(), mode) != 0)
+    {
+        fp = nullptr;
+    }
+#else
+    fp = fopen(chunk.path.c_str(), mode);
+#endif
     if (!fp)
     {
         return;
     }
 
+    if (mode == std::string("rb+"))
+    {
 #ifdef _WIN32
-    _fseeki64(fp, static_cast<__int64>(chunk.start + chunk.downloaded), SEEK_SET);
+        _fseeki64(fp, static_cast<__int64>(chunk.start + chunk.downloaded), SEEK_SET);
 #else
-    fseeko(fp, static_cast<off_t>(chunk.start + chunk.downloaded), SEEK_SET);
+        fseeko(fp, static_cast<off_t>(chunk.start + chunk.downloaded), SEEK_SET);
 #endif
+    }
     chunk.fileHandle = fp;
 
     CURL* curl = curl_easy_init();
@@ -115,15 +129,18 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
     totalFileLength = totalSize;
     NotifyDownloadStarted(static_cast<double>(totalSize));
 
-    std::ofstream out(destinationPath, std::ios::binary | std::ios::out);
-    if (!out.is_open())
+    if (threadCount > 1)
     {
-        NotifyDownloadFailed("Failed to create destination file.");
-        return false;
+        std::ofstream out(destinationPath, std::ios::binary | std::ios::out);
+        if (!out.is_open())
+        {
+            NotifyDownloadFailed("Failed to create destination file.");
+            return false;
+        }
+        out.seekp(totalSize - 1);
+        out.write("", 1);
+        out.close();
     }
-    out.seekp(totalSize - 1);
-    out.write("", 1);
-    out.close();
 
     size_t chunkSize = totalSize / threadCount;
     std::vector<std::thread> threads;
@@ -137,6 +154,8 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
     }
 
     auto startTime = std::chrono::steady_clock::now();
+    auto lastTime = startTime;
+    size_t lastDownloaded = 0;
 
     for (int i = 0; i < threadCount; ++i)
     {
@@ -153,9 +172,18 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         auto currentTime = std::chrono::steady_clock::now();
-        double elapsedSeconds = std::chrono::duration<double>(currentTime - startTime).count();
-        double speed = elapsedSeconds > 0.0 ? static_cast<double>(totalDownloadedBytes) / elapsedSeconds : 0.0;
-        double progress = static_cast<double>(totalDownloadedBytes) / static_cast<double>(totalSize);
+        double elapsedSeconds = std::chrono::duration<double>(currentTime - lastTime).count();
+        size_t currentDownloaded = totalDownloadedBytes.load();
+        double speed = 0.0;
+        if (elapsedSeconds > 0.0)
+        {
+            speed = static_cast<double>(currentDownloaded - lastDownloaded) / elapsedSeconds;
+        }
+
+        lastTime = currentTime;
+        lastDownloaded = currentDownloaded;
+
+        double progress = static_cast<double>(currentDownloaded) / static_cast<double>(totalSize);
 
         NotifyDownloadProgress(progress, speed);
     }

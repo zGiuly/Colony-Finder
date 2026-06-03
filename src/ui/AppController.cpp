@@ -1,11 +1,17 @@
 #include "AppController.h"
 #include "download/HttpDownloader.h"
+#include "download/GzipDecompressor.h"
+#include "download/JsonStreamValidator.h"
+#include <nlohmann/json.hpp>
 #include "ui/states/IAppState.h"
 #include "ui/states/WelcomeState.h"
 #include "ui/states/SelectDownloadState.h"
 #include "ui/states/DownloadingState.h"
+#include "ui/states/ExtractionState.h"
+#include "ui/states/SchemaUpdateState.h"
 #include "ui/states/MainAppState.h"
 #include "ui/states/ErrorState.h"
+#include "ui/SettingsService.h"
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -15,7 +21,7 @@
 
 constexpr int WindowWidth = 1280;
 constexpr int WindowHeight = 720;
-constexpr int ThreadCount = 4;
+constexpr int ThreadCount = 1;
 constexpr float CardWidth = 760.0f;
 constexpr float CardHeight = 460.0f;
 
@@ -31,14 +37,23 @@ AppController::AppController()
       isBusy(false),
       onlineSize1Month(-1.0),
       onlineSizeFull(-1.0),
-      isFetchingSizes(false)
+      isFetchingSizes(false),
+      schemaProgress(0.0f),
+      isUpdatingSchema(false),
+      extractionProgress(0.0f),
+      validationProgress(0.0f),
+      isExtracting(false),
+      isValidating(false),
+      cancelExtractionFlag(false)
 {
     downloader->AddObserver(this);
+    SettingsService::GetInstance().AddObserver(this);
 }
 
 AppController::~AppController()
 {
     downloader->RemoveObserver(this);
+    SettingsService::GetInstance().RemoveObserver(this);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -79,25 +94,46 @@ bool AppController::Initialize()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
 
+    SettingsService::GetInstance().Load();
     CheckLocalDump();
+
+    std::filesystem::path schemaPath = std::filesystem::path(downloadDir) / "galaxy.schema.json";
+    if (!std::filesystem::exists(schemaPath))
+    {
+        StartSchemaUpdate();
+    }
 
     return true;
 }
 
 void AppController::CheckLocalDump()
 {
-    std::filesystem::path p1 = std::filesystem::path(searchDir) / "galaxy.json.gz";
-    std::filesystem::path p2 = std::filesystem::path(searchDir) / "galaxy_1month.json.gz";
+    std::filesystem::path p1_json = std::filesystem::path(searchDir) / "galaxy.json";
+    std::filesystem::path p2_json = std::filesystem::path(searchDir) / "galaxy_1month.json";
+    std::filesystem::path p1_gz = std::filesystem::path(searchDir) / "galaxy.json.gz";
+    std::filesystem::path p2_gz = std::filesystem::path(searchDir) / "galaxy_1month.json.gz";
 
-    if (std::filesystem::exists(p1))
+    if (std::filesystem::exists(p1_json))
     {
-        currentFilePath = p1.string();
+        currentFilePath = p1_json.string();
         return;
     }
 
-    if (std::filesystem::exists(p2))
+    if (std::filesystem::exists(p2_json))
     {
-        currentFilePath = p2.string();
+        currentFilePath = p2_json.string();
+        return;
+    }
+
+    if (std::filesystem::exists(p1_gz))
+    {
+        currentFilePath = p1_gz.string();
+        return;
+    }
+
+    if (std::filesystem::exists(p2_gz))
+    {
+        currentFilePath = p2_gz.string();
         return;
     }
 
@@ -131,7 +167,7 @@ void AppController::StartDownload(const std::string& url)
         }
 
         currentFilePath = destPath.string();
-        TransitionTo(std::make_unique<MainAppState>());
+        StartExtractionAndValidation();
     }).detach();
 }
 
@@ -227,11 +263,123 @@ void AppController::FetchOnlineSizes()
 
     std::thread([this]() {
         double size1 = HttpDownloader::GetContentLength("https://downloads.spansh.co.uk/galaxy_1month.json.gz");
-        onlineSize1Month = size1;
+        onlineSize1Month = (size1 <= 0.0) ? -2.0 : size1;
 
         double size2 = HttpDownloader::GetContentLength("https://downloads.spansh.co.uk/galaxy.json.gz");
-        onlineSizeFull = size2;
+        onlineSizeFull = (size2 <= 0.0) ? -2.0 : size2;
 
         isFetchingSizes = false;
     }).detach();
+}
+
+void AppController::StartSchemaUpdate()
+{
+    if (isUpdatingSchema.load())
+    {
+        return;
+    }
+
+    isUpdatingSchema = true;
+    schemaProgress = 0.0f;
+    TransitionTo(std::make_unique<SchemaUpdateState>());
+
+    std::thread([this]() {
+        std::filesystem::path destPath = std::filesystem::path(downloadDir) / "galaxy.schema.json";
+        auto schemaDownloader = std::make_shared<HttpDownloader>();
+        bool success = schemaDownloader->Download("https://docs.spansh.co.uk/galaxy.schema.json", destPath.string(), 1);
+        
+        isUpdatingSchema = false;
+        if (!success)
+        {
+            errorMessage = "Failed to download schema from https://docs.spansh.co.uk/galaxy.schema.json";
+            TransitionTo(std::make_unique<ErrorState>());
+            return;
+        }
+
+        TransitionTo(std::make_unique<SelectDownloadState>());
+    }).detach();
+}
+
+void AppController::StartExtractionAndValidation()
+{
+    if (isExtracting.load() || isValidating.load())
+    {
+        return;
+    }
+
+    isExtracting = true;
+    isValidating = false;
+    extractionProgress = 0.0f;
+    validationProgress = 0.0f;
+    cancelExtractionFlag = false;
+
+    TransitionTo(std::make_unique<ExtractionState>());
+
+    std::thread([this]() {
+        std::filesystem::path gzPath(currentFilePath);
+        std::filesystem::path jsonPath = gzPath;
+        jsonPath.replace_extension("");
+
+        bool success = GzipDecompressor::Decompress(gzPath.string(), jsonPath.string(), extractionProgress, cancelExtractionFlag);
+        isExtracting = false;
+
+        if (cancelExtractionFlag.load())
+        {
+            std::error_code ec;
+            std::filesystem::remove(jsonPath, ec);
+            return;
+        }
+
+        if (!success)
+        {
+            std::error_code ec;
+            std::filesystem::remove(jsonPath, ec);
+            errorMessage = "Decompression failed. The downloaded file may be corrupted.";
+            TransitionTo(std::make_unique<ErrorState>());
+            return;
+        }
+
+        isValidating = true;
+        std::filesystem::path schemaPath = std::filesystem::path(downloadDir) / "galaxy.schema.json";
+
+        bool valid = JsonStreamValidator::Validate(jsonPath.string(), schemaPath.string(), validationProgress, cancelExtractionFlag);
+        isValidating = false;
+
+        if (cancelExtractionFlag.load() || !valid)
+        {
+            std::error_code ec;
+            std::filesystem::remove(jsonPath, ec);
+            if (cancelExtractionFlag.load())
+            {
+                return;
+            }
+            errorMessage = "Schema validation failed. The JSON structure is invalid or outdated.";
+            TransitionTo(std::make_unique<ErrorState>());
+            return;
+        }
+
+        currentFilePath = jsonPath.string();
+        TransitionTo(std::make_unique<MainAppState>());
+    }).detach();
+}
+
+void AppController::CancelExtraction()
+{
+    cancelExtractionFlag = true;
+}
+
+void AppController::SetDownloadDir(const std::string& path)
+{
+    SettingsService::GetInstance().SetDownloadDir(path);
+}
+
+void AppController::SetSearchDir(const std::string& path)
+{
+    SettingsService::GetInstance().SetSearchDir(path);
+}
+
+void AppController::OnSettingsChanged(const std::string& downloadDirVal, const std::string& searchDirVal)
+{
+    downloadDir = downloadDirVal;
+    searchDir = searchDirVal;
 }

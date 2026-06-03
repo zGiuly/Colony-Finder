@@ -60,6 +60,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(curl)
 
+FetchContent_Declare(
+  zlib
+  URL https://github.com/madler/zlib/archive/refs/tags/v1.3.1.zip
+)
+FetchContent_MakeAvailable(zlib)
+
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+
 find_package(OpenGL REQUIRED)
 
 add_library(imgui STATIC
@@ -86,11 +98,18 @@ add_executable (ColonyFinder
     "src/download/DownloadSubject.h"
     "src/download/HttpDownloader.cpp"
     "src/download/HttpDownloader.h"
+    "src/download/GzipDecompressor.cpp"
+    "src/download/GzipDecompressor.h"
+    "src/download/JsonStreamValidator.cpp"
+    "src/download/JsonStreamValidator.h"
     "src/ui/AppController.cpp"
     "src/ui/AppController.h"
     "src/ui/AppTheme.h"
     "src/ui/FolderDialog.cpp"
     "src/ui/FolderDialog.h"
+    "src/ui/SettingsObserver.h"
+    "src/ui/SettingsService.cpp"
+    "src/ui/SettingsService.h"
     "src/ui/states/IAppState.h"
     "src/ui/states/WelcomeState.cpp"
     "src/ui/states/WelcomeState.h"
@@ -98,6 +117,10 @@ add_executable (ColonyFinder
     "src/ui/states/SelectDownloadState.h"
     "src/ui/states/DownloadingState.cpp"
     "src/ui/states/DownloadingState.h"
+    "src/ui/states/ExtractionState.cpp"
+    "src/ui/states/ExtractionState.h"
+    "src/ui/states/SchemaUpdateState.cpp"
+    "src/ui/states/SchemaUpdateState.h"
     "src/ui/states/MainAppState.cpp"
     "src/ui/states/MainAppState.h"
     "src/ui/states/ErrorState.cpp"
@@ -106,10 +129,10 @@ add_executable (ColonyFinder
 
 target_include_directories(ColonyFinder PRIVATE src)
 
-target_link_libraries(ColonyFinder PRIVATE imgui libcurl)
-
 if (WIN32)
-  target_link_libraries(ColonyFinder PRIVATE ole32 uuid)
+  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlibstatic nlohmann_json ole32 uuid)
+else()
+  target_link_libraries(ColonyFinder PRIVATE imgui libcurl zlib nlohmann_json)
 endif()
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
