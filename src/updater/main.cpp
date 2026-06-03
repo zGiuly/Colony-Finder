@@ -16,8 +16,32 @@
 #include <sys/stat.h>
 #endif
 
+namespace fs = std::filesystem;
+
 namespace
 {
+    fs::path logPath;
+
+    void Log(const std::string& message)
+    {
+        if (logPath.empty())
+        {
+            return;
+        }
+        FILE* fp = nullptr;
+#ifdef _WIN32
+        fopen_s(&fp, logPath.string().c_str(), "a");
+#else
+        fp = fopen(logPath.string().c_str(), "a");
+#endif
+        if (!fp)
+        {
+            return;
+        }
+        std::fprintf(fp, "%s\n", message.c_str());
+        fclose(fp);
+    }
+
     void WaitForParentExit(const std::string& pidStr)
     {
 #ifdef _WIN32
@@ -25,6 +49,7 @@ namespace
         HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, pid);
         if (!h)
         {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
             return;
         }
         WaitForSingleObject(h, 30000);
@@ -42,37 +67,63 @@ namespace
 #endif
     }
 
-    bool ReplaceBinary(const std::string& src, const std::string& dst)
+    bool MovePath(const fs::path& from, const fs::path& to)
     {
         std::error_code ec;
-        for (int attempt = 0; attempt < 20; ++attempt)
+        fs::rename(from, to, ec);
+        if (!ec)
         {
-            std::filesystem::remove(dst, ec);
-            std::filesystem::rename(src, dst, ec);
-            if (!ec)
+            return true;
+        }
+        ec.clear();
+        fs::copy_file(from, to, fs::copy_options::overwrite_existing, ec);
+        if (ec)
+        {
+            return false;
+        }
+        std::error_code rmEc;
+        fs::remove(from, rmEc);
+        return true;
+    }
+
+    bool ReplaceBinary(const fs::path& src, const fs::path& dst)
+    {
+        fs::path backup = dst;
+        backup += ".old";
+
+        std::error_code ec;
+        fs::remove(backup, ec);
+
+        for (int attempt = 0; attempt < 60; ++attempt)
+        {
+            if (!MovePath(dst, backup))
             {
-                return true;
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                continue;
             }
-            std::filesystem::copy_file(src, dst,
-                std::filesystem::copy_options::overwrite_existing, ec);
-            if (!ec)
+
+            if (!MovePath(src, dst))
             {
-                std::error_code rmEc;
-            std::filesystem::remove(src, rmEc);
-                return true;
+                std::error_code rollbackEc;
+                fs::rename(backup, dst, rollbackEc);
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                continue;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+
+            std::error_code cleanupEc;
+            fs::remove(backup, cleanupEc);
+            return true;
         }
         return false;
     }
 
-    void RelaunchApp(const std::string& path)
+    void RelaunchApp(const fs::path& path)
     {
 #ifdef _WIN32
         STARTUPINFOA si = {};
         si.cb = sizeof(si);
         PROCESS_INFORMATION pi = {};
-        std::string cmd = "\"" + path + "\"";
+        std::string cmd = "\"" + path.string() + "\"";
         std::vector<char> buf(cmd.begin(), cmd.end());
         buf.push_back('\0');
         if (CreateProcessA(nullptr, buf.data(), nullptr, nullptr, FALSE,
@@ -102,17 +153,28 @@ int main(int argc, char** argv)
     }
 
     std::string parentPid = argv[1];
-    std::string newBinary = argv[2];
-    std::string targetBinary = argv[3];
+    fs::path newBinary = argv[2];
+    fs::path targetBinary = argv[3];
+
+    logPath = targetBinary.parent_path() / "colony_updater.log";
+    Log("updater start: pid=" + parentPid + " new=" + newBinary.string() + " target=" + targetBinary.string());
+
+    if (!fs::exists(newBinary))
+    {
+        Log("error: new binary missing");
+        return 3;
+    }
 
     WaitForParentExit(parentPid);
+    Log("parent exited, replacing");
 
     if (!ReplaceBinary(newBinary, targetBinary))
     {
-        std::fprintf(stderr, "failed to replace binary\n");
+        Log("error: failed to replace binary after retries");
         return 2;
     }
 
+    Log("replace ok, relaunching");
     RelaunchApp(targetBinary);
     return 0;
 }
