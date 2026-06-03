@@ -1,3 +1,6 @@
+#include "logging/Logger.h"
+#include "logging/ConsoleLogSink.h"
+#include "logging/FileLogSink.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -6,6 +9,7 @@
 #include <chrono>
 #include <filesystem>
 #include <vector>
+#include <memory>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -20,28 +24,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-    fs::path logPath;
-
-    void Log(const std::string& message)
-    {
-        if (logPath.empty())
-        {
-            return;
-        }
-        FILE* fp = nullptr;
-#ifdef _WIN32
-        fopen_s(&fp, logPath.string().c_str(), "a");
-#else
-        fp = fopen(logPath.string().c_str(), "a");
-#endif
-        if (!fp)
-        {
-            return;
-        }
-        std::fprintf(fp, "%s\n", message.c_str());
-        fclose(fp);
-    }
-
     void WaitForParentExit(const std::string& pidStr)
     {
 #ifdef _WIN32
@@ -156,25 +138,32 @@ int main(int argc, char** argv)
     fs::path newBinary = argv[2];
     fs::path targetBinary = argv[3];
 
-    logPath = targetBinary.parent_path() / "colony_updater.log";
-    Log("updater start: pid=" + parentPid + " new=" + newBinary.string() + " target=" + targetBinary.string());
+    Logger::Instance().SetLevel(LogLevel::Debug);
+    Logger::Instance().AddSink(std::make_shared<ConsoleLogSink>());
+    auto fileSink = std::make_shared<FileLogSink>((targetBinary.parent_path() / "colony_updater.log").string());
+    if (fileSink->IsOpen())
+    {
+        Logger::Instance().AddSink(fileSink);
+    }
+
+    LOG_INFO("updater start: pid=%s new=%s target=%s", parentPid.c_str(), newBinary.string().c_str(), targetBinary.string().c_str());
 
     if (!fs::exists(newBinary))
     {
-        Log("error: new binary missing");
+        LOG_ERROR("new binary missing: %s", newBinary.string().c_str());
         return 3;
     }
 
     WaitForParentExit(parentPid);
-    Log("parent exited, replacing");
+    LOG_DEBUG("parent exited, starting replace");
 
     if (!ReplaceBinary(newBinary, targetBinary))
     {
-        Log("error: failed to replace binary after retries");
+        LOG_ERROR("failed to replace binary after retries");
         return 2;
     }
 
-    Log("replace ok, relaunching");
+    LOG_INFO("replace ok, relaunching %s", targetBinary.string().c_str());
     RelaunchApp(targetBinary);
     return 0;
 }

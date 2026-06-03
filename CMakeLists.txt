@@ -210,8 +210,22 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ColonyFinder PROPERTY CXX_STANDARD 20)
 endif()
 
-add_executable(colony_updater "src/updater/main.cpp")
+add_executable(colony_updater
+    "src/updater/main.cpp"
+    "src/logging/LogLevel.h"
+    "src/logging/LogLevel.cpp"
+    "src/logging/LogRecord.h"
+    "src/logging/LogRecord.cpp"
+    "src/logging/ILogSink.h"
+    "src/logging/ConsoleLogSink.h"
+    "src/logging/ConsoleLogSink.cpp"
+    "src/logging/FileLogSink.h"
+    "src/logging/FileLogSink.cpp"
+    "src/logging/Logger.h"
+    "src/logging/Logger.cpp"
+)
 set_property(TARGET colony_updater PROPERTY CXX_STANDARD 20)
+target_include_directories(colony_updater PRIVATE src)
 if (WIN32)
   set_target_properties(colony_updater PROPERTIES WIN32_EXECUTABLE FALSE)
 endif()
