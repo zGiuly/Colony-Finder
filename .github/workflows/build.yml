@@ -130,13 +130,21 @@ jobs:
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
+          request_rate: 4
           files: |
             dist/ColonyFinder-linux-x64
             dist/ColonyFinder-windows-x64.exe
 
       - name: Build security notes
         run: |
-          echo "## Security scan" > vt_notes.md
+          echo "## Installation" > vt_notes.md
+          echo "" >> vt_notes.md
+          echo "**Download the \`.zip\` archive for your platform** (\`ColonyFinder-windows-x64.zip\` or \`ColonyFinder-linux-x64.zip\`)." >> vt_notes.md
+          echo "It contains both \`ColonyFinder\` and \`colony_updater\`, which must live in the same folder for the auto-updater to work." >> vt_notes.md
+          echo "" >> vt_notes.md
+          echo "The standalone binaries (\`ColonyFinder-*-x64\`, \`colony_updater-*-x64\`) are published for users who want to refresh a single component, but a fresh install should use the zip." >> vt_notes.md
+          echo "" >> vt_notes.md
+          echo "## Security scan" >> vt_notes.md
           echo "" >> vt_notes.md
           echo "All release binaries passed a **ClamAV** malware scan during the build." >> vt_notes.md
           echo "" >> vt_notes.md
