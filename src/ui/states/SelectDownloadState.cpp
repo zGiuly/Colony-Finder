@@ -31,7 +31,7 @@ void SelectDownloadState::Render(AppController* controller)
     ImGui::TextColored(controller->GetTheme().textNormal, "%s", SettingsService::GetInstance().GetDownloadDir().c_str());
 
     float availWidthCol1 = ImGui::GetContentRegionAvail().x;
-    if (ImGui::Button("Browse Target Dir...", ImVec2(availWidthCol1, 30.0f)))
+    if (ImGui::Button("Browse Target Dir...", ImVec2(availWidthCol1, controller->GetTheme().buttonHeightSmall)))
     {
         std::string path = SelectFolderDialog();
         if (!path.empty())
@@ -97,30 +97,34 @@ void SelectDownloadState::Render(AppController* controller)
     ImGui::TextColored(controller->GetTheme().textNormal, "%s", SettingsService::GetInstance().GetSearchDir().c_str());
 
     float availWidthCol2 = ImGui::GetContentRegionAvail().x;
-    if (ImGui::Button("Browse Search Dir...", ImVec2(availWidthCol2, 30.0f)))
+    if (ImGui::Button("Browse Search Dir...", ImVec2(availWidthCol2, controller->GetTheme().buttonHeightSmall)))
     {
         std::string path = SelectFolderDialog();
         if (!path.empty())
         {
             SettingsService::GetInstance().SetSearchDir(path);
+            DatabaseService::GetInstance().CheckLocalDump();
+            if (!DatabaseService::GetInstance().GetCurrentFilePath().empty())
+            {
+                DatabaseService::GetInstance().EnterApplicationFlow();
+            }
         }
     }
     ImGui::Spacing();
-    ImGui::Spacing();
-    ImGui::Spacing();
 
-    if (ImGui::Button("Scan & Verify Path", ImVec2(availWidthCol2, controller->GetButtonHeightMedium())))
+    const std::string& detected = DatabaseService::GetInstance().GetCurrentFilePath();
+    if (!detected.empty())
     {
-        DatabaseService::GetInstance().CheckLocalDump();
-        if (DatabaseService::GetInstance().GetCurrentFilePath().empty())
-        {
-            controller->SetErrorMessage("No spansh database file (galaxy.json, galaxy_1month.json, galaxy.json.gz or galaxy_1month.json.gz) found in selected directory.");
-            controller->TransitionTo(std::make_unique<ErrorState>());
-        }
-        else
+        ImGui::TextColored(controller->GetTheme().textSuccess, "[+] Detected: %s", detected.c_str());
+        ImGui::Spacing();
+        if (ImGui::Button("Use This Database", ImVec2(availWidthCol2, controller->GetButtonHeightMedium())))
         {
             DatabaseService::GetInstance().EnterApplicationFlow();
         }
+    }
+    else
+    {
+        ImGui::TextColored(controller->GetTheme().textMuted, "No Spansh dump detected in this directory.");
     }
 
     ImGui::Columns(1);
@@ -169,12 +173,12 @@ void SelectDownloadState::Render(AppController* controller)
     ImGui::Spacing();
     ImGui::Separator();
 
-    if (ImGui::Button("< Back", ImVec2(100.0f, 30.0f)))
+    if (ImGui::Button("< Back", ImVec2(controller->GetTheme().buttonWidthSmall, controller->GetTheme().buttonHeightSmall)))
     {
         controller->TransitionTo(std::make_unique<WelcomeState>());
     }
     ImGui::SameLine();
-    if (ImGui::Button("Update Schema", ImVec2(140.0f, 30.0f)))
+    if (ImGui::Button("Update Schema", ImVec2(controller->GetTheme().buttonWidthSmall * 1.4f, controller->GetTheme().buttonHeightSmall)))
     {
         DatabaseService::GetInstance().StartSchemaUpdate();
     }

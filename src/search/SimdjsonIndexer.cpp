@@ -136,30 +136,6 @@ bool SimdjsonIndexer::ProcessLine(const char* data, size_t length)
                         bool v;
                         if (!bf.value.get_bool().get(v)) isLandable = v;
                     }
-                    else if (bf.key == "signals")
-                    {
-                        dom::object sigOuter;
-                        if (bf.value.get_object().get(sigOuter)) continue;
-                        for (const auto& so : sigOuter)
-                        {
-                            if (so.key != "signals") continue;
-                            dom::object sigMap;
-                            if (so.value.get_object().get(sigMap)) continue;
-                            for (const auto& sm : sigMap)
-                            {
-                                int64_t cnt;
-                                if (sm.value.get_int64().get(cnt))
-                                {
-                                    uint64_t ucnt;
-                                    if (sm.value.get_uint64().get(ucnt)) continue;
-                                    cnt = static_cast<int64_t>(ucnt);
-                                }
-                                if (cnt <= 0) continue;
-                                if (sm.key == "Biological") rec.bodyTypesMask |= SystemIndex::Body_BioSignals;
-                                else if (sm.key == "Geological") rec.bodyTypesMask |= SystemIndex::Body_GeoSignals;
-                            }
-                        }
-                    }
                 }
 
                 if (hasType && hasSubType)
@@ -170,8 +146,8 @@ bool SimdjsonIndexer::ProcessLine(const char* data, size_t length)
                     }
                     else if (type == "Planet")
                     {
-                        ParseBodyType(subType, rec.bodyTypesMask);
-                        if (isLandable) rec.bodyTypesMask |= SystemIndex::Body_Landable;
+                        ParseBodyType(subType, rec.bodyTypeCounts);
+                        if (isLandable) rec.flags |= SystemIndex::System_HasLandable;
                     }
                 }
             }
@@ -181,7 +157,6 @@ bool SimdjsonIndexer::ProcessLine(const char* data, size_t length)
     if (!hasId || !hasName || !hasCoords) return true;
 
     rec.nameOffset = static_cast<uint32_t>(m_stringTableOffset);
-    rec.reserved = 0;
 
     m_recordsFile.write(reinterpret_cast<const char*>(&rec), sizeof(rec));
     m_stringsFile.write(name.data(), name.size());
@@ -212,16 +187,19 @@ void SimdjsonIndexer::ParseStarType(std::string_view subType, uint16_t& mask)
     else mask |= SystemIndex::Star_Other;
 }
 
-void SimdjsonIndexer::ParseBodyType(std::string_view subType, uint32_t& mask)
+void SimdjsonIndexer::ParseBodyType(std::string_view subType, uint8_t (&counts)[8])
 {
-    if (subType.find("Earth-like world") != std::string_view::npos) mask |= SystemIndex::Body_ELW;
-    else if (subType.find("Water world") != std::string_view::npos) mask |= SystemIndex::Body_WW;
-    else if (subType.find("Ammonia world") != std::string_view::npos) mask |= SystemIndex::Body_AMW;
-    else if (subType.find("High metal content world") != std::string_view::npos) mask |= SystemIndex::Body_HMC;
-    else if (subType.find("Metal-rich body") != std::string_view::npos) mask |= SystemIndex::Body_MetalRich;
-    else if (subType.find("Rocky body") != std::string_view::npos) mask |= SystemIndex::Body_Rocky;
+    int idx = -1;
+    if (subType.find("Earth-like world") != std::string_view::npos) idx = SystemIndex::BTI_ELW;
+    else if (subType.find("Water world") != std::string_view::npos) idx = SystemIndex::BTI_WW;
+    else if (subType.find("Ammonia world") != std::string_view::npos) idx = SystemIndex::BTI_AMW;
+    else if (subType.find("High metal content world") != std::string_view::npos) idx = SystemIndex::BTI_HMC;
+    else if (subType.find("Metal-rich body") != std::string_view::npos) idx = SystemIndex::BTI_MetalRich;
+    else if (subType.find("Rocky body") != std::string_view::npos) idx = SystemIndex::BTI_Rocky;
     else if (subType.find("Icy body") != std::string_view::npos ||
-             subType.find("Rocky Ice world") != std::string_view::npos) mask |= SystemIndex::Body_Icy;
+             subType.find("Rocky Ice world") != std::string_view::npos) idx = SystemIndex::BTI_Icy;
     else if (subType.find("gas giant") != std::string_view::npos ||
-             subType.find("Gas giant") != std::string_view::npos) mask |= SystemIndex::Body_GasGiant;
+             subType.find("Gas giant") != std::string_view::npos) idx = SystemIndex::BTI_GasGiant;
+
+    if (idx >= 0 && counts[idx] < 255) counts[idx]++;
 }

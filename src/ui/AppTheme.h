@@ -14,6 +14,18 @@ struct AppTheme
     ImVec4 textAlert = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
     ImVec4 textSuccess = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
     ImVec4 border = ImVec4(0.6f, 0.25f, 0.0f, 0.5f);
+    ImVec4 rowHover = ImVec4(1.0f, 0.498f, 0.0f, 0.18f);
+    ImVec4 rowHoverActive = ImVec4(1.0f, 0.498f, 0.0f, 0.22f);
+    ImVec4 rowSelected = ImVec4(1.0f, 0.498f, 0.0f, 0.32f);
+
+    float buttonWidthLarge = 240.0f;
+    float buttonHeightLarge = 50.0f;
+    float buttonWidthMedium = 200.0f;
+    float buttonHeightMedium = 40.0f;
+    float buttonWidthSmall = 100.0f;
+    float buttonHeightSmall = 30.0f;
+    float buttonWidthPager = 80.0f;
+    float progressBarHeight = 30.0f;
 
     static void Apply(const AppTheme& theme)
     {

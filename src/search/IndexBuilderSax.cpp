@@ -55,17 +55,6 @@ bool IndexBuilderSax::number_integer(number_integer_t val)
             currentSystem.bodyCount = static_cast<uint16_t>(val);
         }
     }
-    else if (depth == Depth_Signals)
-    {
-        if (currentKey == "Biological" && val > 0)
-        {
-            currentSystem.bodyTypesMask |= SystemIndex::Body_BioSignals;
-        }
-        else if (currentKey == "Geological" && val > 0)
-        {
-            currentSystem.bodyTypesMask |= SystemIndex::Body_GeoSignals;
-        }
-    }
     return !cancel.load();
 }
 
@@ -84,17 +73,6 @@ bool IndexBuilderSax::number_unsigned(number_unsigned_t val)
         else if (currentKey == "bodyCount")
         {
             currentSystem.bodyCount = static_cast<uint16_t>(val);
-        }
-    }
-    else if (depth == Depth_Signals)
-    {
-        if (currentKey == "Biological" && val > 0)
-        {
-            currentSystem.bodyTypesMask |= SystemIndex::Body_BioSignals;
-        }
-        else if (currentKey == "Geological" && val > 0)
-        {
-            currentSystem.bodyTypesMask |= SystemIndex::Body_GeoSignals;
         }
     }
     return !cancel.load();
@@ -187,10 +165,9 @@ bool IndexBuilderSax::end_object()
         rec.population = currentSystem.population;
         rec.bodyCount = currentSystem.bodyCount;
         rec.starTypesMask = currentSystem.starTypesMask;
-        rec.bodyTypesMask = currentSystem.bodyTypesMask;
+        for (int i = 0; i < SystemIndex::BTI_Count; ++i) rec.bodyTypeCounts[i] = currentSystem.bodyTypeCounts[i];
         rec.nameOffset = static_cast<uint32_t>(stringTableOffset);
-        rec.flags = 0;
-        rec.reserved = 0;
+        rec.flags = currentSystem.flags;
 
         recordsFile.write(reinterpret_cast<const char*>(&rec), sizeof(rec));
         stringsFile.write(currentSystem.name.c_str(), currentSystem.name.size() + 1);
@@ -206,10 +183,10 @@ bool IndexBuilderSax::end_object()
         }
         else if (currentBodyType == "Planet")
         {
-            ParseBodyType(currentBodySubType, currentSystem.bodyTypesMask);
+            ParseBodyType(currentBodySubType, currentSystem.bodyTypeCounts);
             if (currentBodyIsLandable)
             {
-                currentSystem.bodyTypesMask |= SystemIndex::Body_Landable;
+                currentSystem.flags |= SystemIndex::System_HasLandable;
             }
         }
     }
@@ -294,38 +271,17 @@ void IndexBuilderSax::ParseStarType(const std::string& subType, uint16_t& mask)
     }
 }
 
-void IndexBuilderSax::ParseBodyType(const std::string& subType, uint32_t& mask)
+void IndexBuilderSax::ParseBodyType(const std::string& subType, uint8_t (&counts)[SystemIndex::BTI_Count])
 {
-    if (subType.find("Earth-like world") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_ELW;
-    }
-    else if (subType.find("Water world") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_WW;
-    }
-    else if (subType.find("Ammonia world") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_AMW;
-    }
-    else if (subType.find("High metal content world") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_HMC;
-    }
-    else if (subType.find("Metal-rich body") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_MetalRich;
-    }
-    else if (subType.find("Rocky body") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_Rocky;
-    }
-    else if (subType.find("Icy body") != std::string::npos || subType.find("Rocky Ice world") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_Icy;
-    }
-    else if (subType.find("gas giant") != std::string::npos || subType.find("Gas giant") != std::string::npos)
-    {
-        mask |= SystemIndex::Body_GasGiant;
-    }
+    int idx = -1;
+    if (subType.find("Earth-like world") != std::string::npos) idx = SystemIndex::BTI_ELW;
+    else if (subType.find("Water world") != std::string::npos) idx = SystemIndex::BTI_WW;
+    else if (subType.find("Ammonia world") != std::string::npos) idx = SystemIndex::BTI_AMW;
+    else if (subType.find("High metal content world") != std::string::npos) idx = SystemIndex::BTI_HMC;
+    else if (subType.find("Metal-rich body") != std::string::npos) idx = SystemIndex::BTI_MetalRich;
+    else if (subType.find("Rocky body") != std::string::npos) idx = SystemIndex::BTI_Rocky;
+    else if (subType.find("Icy body") != std::string::npos || subType.find("Rocky Ice world") != std::string::npos) idx = SystemIndex::BTI_Icy;
+    else if (subType.find("gas giant") != std::string::npos || subType.find("Gas giant") != std::string::npos) idx = SystemIndex::BTI_GasGiant;
+
+    if (idx >= 0 && counts[idx] < 255) counts[idx]++;
 }

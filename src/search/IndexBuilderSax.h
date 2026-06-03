@@ -16,7 +16,8 @@ struct CurrentSystem
     uint64_t population = 0;
     uint16_t bodyCount = 0;
     uint16_t starTypesMask = 0;
-    uint32_t bodyTypesMask = 0;
+    uint8_t bodyTypeCounts[SystemIndex::BTI_Count] = {};
+    uint32_t flags = 0;
 };
 
 class IndexBuilderSax : public nlohmann::json_sax<nlohmann::json>
@@ -40,7 +41,7 @@ public:
 
 private:
     void ParseStarType(const std::string& subType, uint16_t& mask);
-    void ParseBodyType(const std::string& subType, uint32_t& mask);
+    void ParseBodyType(const std::string& subType, uint8_t (&counts)[SystemIndex::BTI_Count]);
 
     std::ofstream& recordsFile;
     std::ofstream& stringsFile;

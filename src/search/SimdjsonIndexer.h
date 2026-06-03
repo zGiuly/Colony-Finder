@@ -18,7 +18,7 @@ public:
 
 private:
     void ParseStarType(std::string_view subType, uint16_t& mask);
-    void ParseBodyType(std::string_view subType, uint32_t& mask);
+    void ParseBodyType(std::string_view subType, uint8_t (&counts)[8]);
 
     std::ofstream& m_recordsFile;
     std::ofstream& m_stringsFile;

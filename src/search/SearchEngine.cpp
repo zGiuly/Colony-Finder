@@ -251,7 +251,20 @@ bool SearchEngine::Search(const SearchFilters& filters, std::vector<SearchResult
             continue;
         }
 
-        if (filters.filterBodyType && (rec.bodyTypesMask & filters.bodyTypesMask) != filters.bodyTypesMask)
+        bool countsOk = true;
+        for (int t = 0; t < SystemIndex::BTI_Count; ++t)
+        {
+            if (!filters.bodyCountEnabled[t]) continue;
+            uint8_t c = rec.bodyTypeCounts[t];
+            if (c < filters.minBodyTypeCount[t] || c > filters.maxBodyTypeCount[t])
+            {
+                countsOk = false;
+                break;
+            }
+        }
+        if (!countsOk) continue;
+
+        if (filters.filterLandable && (rec.flags & SystemIndex::System_HasLandable) == 0)
         {
             continue;
         }

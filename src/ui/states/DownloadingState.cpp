@@ -22,7 +22,7 @@ void DownloadingState::Render(AppController* controller)
     double speed = db.GetDownloadSpeed();
     double totalSize = db.GetTotalFileSize();
 
-    ImGui::ProgressBar(progress, ImVec2(-1.0f, 30.0f));
+    ImGui::ProgressBar(progress, ImVec2(-1.0f, controller->GetTheme().progressBarHeight));
     ImGui::Spacing();
 
     double totalMb = totalSize / BytesInMb;

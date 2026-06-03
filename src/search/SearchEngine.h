@@ -15,8 +15,11 @@ struct SearchFilters
     bool filterStarType = false;
     uint16_t starTypesMask = 0;
 
-    bool filterBodyType = false;
-    uint32_t bodyTypesMask = 0;
+    bool bodyCountEnabled[SystemIndex::BTI_Count] = {};
+    uint8_t minBodyTypeCount[SystemIndex::BTI_Count] = {};
+    uint8_t maxBodyTypeCount[SystemIndex::BTI_Count] = {255,255,255,255,255,255,255,255};
+
+    bool filterLandable = false;
 
     bool filterDistance = false;
     float maxDistanceLy = 0.0f;

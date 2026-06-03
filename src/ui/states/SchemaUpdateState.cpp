@@ -14,5 +14,5 @@ void SchemaUpdateState::Render(AppController* controller)
     ImGui::Spacing();
 
     auto& db = DatabaseService::GetInstance();
-    ImGui::ProgressBar(db.GetSchemaProgress(), ImVec2(-1.0f, 30.0f));
+    ImGui::ProgressBar(db.GetSchemaProgress(), ImVec2(-1.0f, controller->GetTheme().progressBarHeight));
 }

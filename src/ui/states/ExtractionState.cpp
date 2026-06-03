@@ -14,7 +14,7 @@ void ExtractionState::Render(AppController* controller)
     auto& db = DatabaseService::GetInstance();
 
     ImGui::Text("Decompressing & indexing Spansh dump (streaming)...");
-    ImGui::ProgressBar(db.GetExtractionProgress(), ImVec2(-1.0f, 30.0f));
+    ImGui::ProgressBar(db.GetExtractionProgress(), ImVec2(-1.0f, controller->GetTheme().progressBarHeight));
 
     double remaining = db.GetExtractionTimeRemaining();
     if (remaining >= 0.0)

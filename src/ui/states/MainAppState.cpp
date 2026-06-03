@@ -6,9 +6,11 @@
 #include <filesystem>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 constexpr float FilterPanelWidth = 320.0f;
-constexpr size_t MaxResultsToReturn = 100;
+constexpr size_t MaxResultsToReturn = 5000;
+constexpr int ResultsPerPage = 50;
 constexpr float MinDistanceLy = 0.0f;
 constexpr float MaxDistanceLy = 100000.0f;
 constexpr float DefaultMaxDistanceLy = 100.0f;
@@ -28,6 +30,7 @@ static void FormatPopulation(uint64_t pop, char* buf, size_t buflen)
 MainAppState::MainAppState()
     : isEngineInitialized(false),
       searchTriggered(false),
+      currentPage(0),
       minPopBuf(0),
       maxPopBuf(100000000000ULL),
       starO(false),
@@ -41,18 +44,9 @@ MainAppState::MainAppState()
       starNeutron(false),
       starBlackHole(false),
       starWhiteDwarf(false),
-      bodyELW(false),
-      bodyWW(false),
-      bodyAMW(false),
-      bodyHMC(false),
-      bodyMetalRich(false),
-      bodyRocky(false),
-      bodyIcy(false),
-      bodyGasGiant(false),
-      bodyLandable(false),
-      bodyBio(false),
-      bodyGeo(false)
+      bodyLandable(false)
 {
+    for (int i = 0; i < 8; ++i) { bodyEnable[i] = false; bodyMin[i] = 1; bodyMax[i] = 100; }
     std::memset(systemQueryBuf, 0, sizeof(systemQueryBuf));
     std::memset(sourceSystemBuf, 0, sizeof(sourceSystemBuf));
     std::snprintf(sourceSystemBuf, sizeof(sourceSystemBuf), "Sol");
@@ -155,23 +149,33 @@ void MainAppState::Render(AppController* controller)
 
     if (ImGui::TreeNode("Planet Types"))
     {
-        ImGui::Checkbox("Earth-like (ELW)", &bodyELW);
-        ImGui::Checkbox("Water World (WW)", &bodyWW);
-        ImGui::Checkbox("Ammonia World (AMW)", &bodyAMW);
-        ImGui::Checkbox("High Metal (HMC)", &bodyHMC);
-        ImGui::Checkbox("Metal-rich", &bodyMetalRich);
-        ImGui::Checkbox("Rocky", &bodyRocky);
-        ImGui::Checkbox("Icy", &bodyIcy);
-        ImGui::Checkbox("Gas Giant", &bodyGasGiant);
-        ImGui::Checkbox("Landable", &bodyLandable);
-        ImGui::Checkbox("Bio Signals", &bodyBio);
-        ImGui::Checkbox("Geo Signals", &bodyGeo);
+        static const char* labels[8] = { "Earth-like (ELW)", "Water World (WW)", "Ammonia World (AMW)", "High Metal (HMC)", "Metal-rich", "Rocky", "Icy", "Gas Giant" };
+        for (int i = 0; i < 8; ++i)
+        {
+            ImGui::PushID(i);
+            ImGui::Checkbox(labels[i], &bodyEnable[i]);
+            if (bodyEnable[i])
+            {
+                ImGui::Indent();
+                ImGui::PushItemWidth(80.0f);
+                ImGui::InputInt("Min", &bodyMin[i]);
+                ImGui::SameLine();
+                ImGui::InputInt("Max", &bodyMax[i]);
+                ImGui::PopItemWidth();
+                if (bodyMin[i] < 0) bodyMin[i] = 0;
+                if (bodyMax[i] > 255) bodyMax[i] = 255;
+                if (bodyMax[i] < bodyMin[i]) bodyMax[i] = bodyMin[i];
+                ImGui::Unindent();
+            }
+            ImGui::PopID();
+        }
+        ImGui::Checkbox("Landable Required", &bodyLandable);
         ImGui::TreePop();
     }
     ImGui::Spacing();
     ImGui::Spacing();
 
-    if (ImGui::Button("RUN QUERY", ImVec2(-1.0f, 40.0f)))
+    if (ImGui::Button("RUN QUERY", ImVec2(-1.0f, controller->GetTheme().buttonHeightMedium)))
     {
         filters.systemNameQuery = systemQueryBuf;
         filters.sourceSystemName = sourceSystemBuf;
@@ -190,26 +194,21 @@ void MainAppState::Render(AppController* controller)
         if (starBlackHole) filters.starTypesMask |= SystemIndex::Star_BlackHole;
         if (starWhiteDwarf) filters.starTypesMask |= SystemIndex::Star_WhiteDwarf;
 
-        filters.filterBodyType = (bodyELW || bodyWW || bodyAMW || bodyHMC || bodyMetalRich || bodyRocky || bodyIcy || bodyGasGiant || bodyLandable || bodyBio || bodyGeo);
-        filters.bodyTypesMask = 0;
-        if (bodyELW) filters.bodyTypesMask |= SystemIndex::Body_ELW;
-        if (bodyWW) filters.bodyTypesMask |= SystemIndex::Body_WW;
-        if (bodyAMW) filters.bodyTypesMask |= SystemIndex::Body_AMW;
-        if (bodyHMC) filters.bodyTypesMask |= SystemIndex::Body_HMC;
-        if (bodyMetalRich) filters.bodyTypesMask |= SystemIndex::Body_MetalRich;
-        if (bodyRocky) filters.bodyTypesMask |= SystemIndex::Body_Rocky;
-        if (bodyIcy) filters.bodyTypesMask |= SystemIndex::Body_Icy;
-        if (bodyGasGiant) filters.bodyTypesMask |= SystemIndex::Body_GasGiant;
-        if (bodyLandable) filters.bodyTypesMask |= SystemIndex::Body_Landable;
-        if (bodyBio) filters.bodyTypesMask |= SystemIndex::Body_BioSignals;
-        if (bodyGeo) filters.bodyTypesMask |= SystemIndex::Body_GeoSignals;
+        for (int i = 0; i < 8; ++i)
+        {
+            filters.bodyCountEnabled[i] = bodyEnable[i];
+            filters.minBodyTypeCount[i] = static_cast<uint8_t>(bodyMin[i]);
+            filters.maxBodyTypeCount[i] = static_cast<uint8_t>(bodyMax[i]);
+        }
+        filters.filterLandable = bodyLandable;
 
         searchEngine.Search(filters, results, MaxResultsToReturn);
         searchTriggered = true;
+        currentPage = 0;
     }
     ImGui::Spacing();
 
-    if (ImGui::Button("Back to Setup", ImVec2(-1.0f, 30.0f)))
+    if (ImGui::Button("Back to Setup", ImVec2(-1.0f, controller->GetTheme().buttonHeightSmall)))
     {
         searchEngine.Shutdown();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
@@ -230,7 +229,32 @@ void MainAppState::Render(AppController* controller)
     }
     else
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess, "Found %zu systems:", results.size());
+        int totalPages = static_cast<int>((results.size() + ResultsPerPage - 1) / ResultsPerPage);
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        if (currentPage < 0) currentPage = 0;
+
+        size_t startIdx = static_cast<size_t>(currentPage) * ResultsPerPage;
+        size_t endIdx = std::min(startIdx + ResultsPerPage, results.size());
+
+        if (results.size() >= MaxResultsToReturn)
+        {
+            ImGui::TextColored(controller->GetTheme().textSuccess, "Found %zu+ systems (cap reached, refine filters for more):", results.size());
+        }
+        else
+        {
+            ImGui::TextColored(controller->GetTheme().textSuccess, "Found %zu systems:", results.size());
+        }
+        ImGui::Spacing();
+
+        ImGui::BeginDisabled(currentPage <= 0);
+        if (ImGui::Button("< Prev", ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage--;
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::Text("Page %d / %d  (showing %zu-%zu)", currentPage + 1, totalPages, startIdx + 1, endIdx);
+        ImGui::SameLine();
+        ImGui::BeginDisabled(currentPage >= totalPages - 1);
+        if (ImGui::Button("Next >", ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage++;
+        ImGui::EndDisabled();
         ImGui::Spacing();
 
         if (ImGui::BeginTable("ResultsTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp, ImVec2(0.0f, -1.0f)))
@@ -242,12 +266,27 @@ void MainAppState::Render(AppController* controller)
             ImGui::TableHeadersRow();
 
             char popBuf[32];
-            for (const auto& res : results)
+            char popupId[32];
+            for (size_t i = startIdx; i < endIdx; ++i)
             {
+                const auto& res = results[i];
                 ImGui::TableNextRow();
 
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%s", res.name.c_str());
+                ImGui::PushStyleColor(ImGuiCol_Header, controller->GetTheme().rowHover);
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, controller->GetTheme().rowHoverActive);
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, controller->GetTheme().rowSelected);
+                ImGui::Selectable(res.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap);
+                ImGui::PopStyleColor(3);
+                std::snprintf(popupId, sizeof(popupId), "row_ctx_%zu", i);
+                if (ImGui::BeginPopupContextItem(popupId, ImGuiPopupFlags_MouseButtonRight))
+                {
+                    if (ImGui::MenuItem("Copy system name"))
+                    {
+                        ImGui::SetClipboardText(res.name.c_str());
+                    }
+                    ImGui::EndPopup();
+                }
 
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("%.2f Ly", res.distanceToSource);

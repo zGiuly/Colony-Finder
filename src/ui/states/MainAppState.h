@@ -16,6 +16,7 @@ private:
     std::vector<SearchResult> results;
     bool isEngineInitialized;
     bool searchTriggered;
+    int currentPage;
 
     char systemQueryBuf[128];
     char sourceSystemBuf[128];
@@ -35,15 +36,8 @@ private:
     bool starBlackHole;
     bool starWhiteDwarf;
 
-    bool bodyELW;
-    bool bodyWW;
-    bool bodyAMW;
-    bool bodyHMC;
-    bool bodyMetalRich;
-    bool bodyRocky;
-    bool bodyIcy;
-    bool bodyGasGiant;
+    bool bodyEnable[8];
+    int bodyMin[8];
+    int bodyMax[8];
     bool bodyLandable;
-    bool bodyBio;
-    bool bodyGeo;
 };

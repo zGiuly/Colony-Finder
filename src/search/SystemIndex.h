@@ -3,7 +3,20 @@
 
 namespace SystemIndex
 {
-    constexpr uint32_t Version = 2;
+    constexpr uint32_t Version = 3;
+
+    enum BodyTypeIndex : uint8_t
+    {
+        BTI_ELW = 0,
+        BTI_WW,
+        BTI_AMW,
+        BTI_HMC,
+        BTI_MetalRich,
+        BTI_Rocky,
+        BTI_Icy,
+        BTI_GasGiant,
+        BTI_Count
+    };
 
     struct Header
     {
@@ -21,15 +34,9 @@ namespace SystemIndex
         uint64_t population;
         uint16_t bodyCount;
         uint16_t starTypesMask;
-        uint32_t bodyTypesMask;
+        uint8_t bodyTypeCounts[BTI_Count];
         uint32_t nameOffset;
         uint32_t flags;
-        uint32_t reserved;
-    };
-
-    enum SystemFlag : uint32_t
-    {
-        System_PlayerColonized = 1 << 0
     };
 
     enum StarType : uint16_t
@@ -48,18 +55,9 @@ namespace SystemIndex
         Star_Other = 1 << 11
     };
 
-    enum BodyType : uint32_t
+    enum SystemFlag : uint32_t
     {
-        Body_ELW = 1 << 0,
-        Body_WW = 1 << 1,
-        Body_AMW = 1 << 2,
-        Body_HMC = 1 << 3,
-        Body_MetalRich = 1 << 4,
-        Body_Rocky = 1 << 5,
-        Body_Icy = 1 << 6,
-        Body_GasGiant = 1 << 7,
-        Body_Landable = 1 << 8,
-        Body_BioSignals = 1 << 9,
-        Body_GeoSignals = 1 << 10
+        System_PlayerColonized = 1 << 0,
+        System_HasLandable = 1 << 1
     };
 }

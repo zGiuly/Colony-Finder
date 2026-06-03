@@ -44,10 +44,10 @@ public:
 
     const AppTheme& GetTheme() const { return theme; }
 
-    float GetButtonWidthLarge() const { return 240.0f; }
-    float GetButtonHeightLarge() const { return 50.0f; }
-    float GetButtonWidthMedium() const { return 200.0f; }
-    float GetButtonHeightMedium() const { return 40.0f; }
+    float GetButtonWidthLarge() const { return theme.buttonWidthLarge; }
+    float GetButtonHeightLarge() const { return theme.buttonHeightLarge; }
+    float GetButtonWidthMedium() const { return theme.buttonWidthMedium; }
+    float GetButtonHeightMedium() const { return theme.buttonHeightMedium; }
 
     const std::string& GetErrorMessage() const { return errorMessage; }
     void SetErrorMessage(const std::string& error) { errorMessage = error; }
