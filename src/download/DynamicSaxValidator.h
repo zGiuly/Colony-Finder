@@ -7,6 +7,12 @@
 #include <algorithm>
 #include <fstream>
 
+/**
+ * \todo PENDING IMPLEMENTATION: SAX validator built against the Spansh
+ *       galaxy schema. Functional but not yet invoked — see
+ *       JsonStreamValidator and StreamingProcessor::Process for the
+ *       hook-up point.
+ */
 class DynamicSaxValidator : public nlohmann::json_sax<nlohmann::json>
 {
 public:

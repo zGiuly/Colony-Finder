@@ -86,6 +86,9 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
                                                        std::atomic<bool>& cancelFlag,
                                                        int bufferSizeMb)
 {
+    // TODO PENDING IMPLEMENTATION: schemaPath is accepted for API stability
+    // but galaxy-schema validation is not yet invoked here. Wire in
+    // JsonStreamValidator::Validate(...) once the validation stage is enabled.
     (void)schemaPath;
     Result result;
 
@@ -143,10 +146,16 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
             std::vector<char> line;
             while (lineQueue.Pop(line))
             {
-                if (cancelFlag.load()) { failed.store(true); break; }
+                if (cancelFlag.load())
+                {
+                    failed.store(true);
+                    lineQueue.Close();
+                    break;
+                }
                 if (!wp->indexer->ProcessLine(line.data(), line.size()))
                 {
                     failed.store(true);
+                    lineQueue.Close();
                     break;
                 }
             }

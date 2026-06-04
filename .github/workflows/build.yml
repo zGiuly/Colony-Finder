@@ -54,6 +54,7 @@ jobs:
           path: |
             build/ColonyFinder
             build/colony_updater
+            build/colony_indexer
 
   build-windows:
     runs-on: windows-latest
@@ -87,6 +88,7 @@ jobs:
           path: |
             build/Release/ColonyFinder.exe
             build/Release/colony_updater.exe
+            build/Release/colony_indexer.exe
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -112,9 +114,11 @@ jobs:
           mkdir -p dist
           cp linux/ColonyFinder dist/ColonyFinder-linux-x64
           cp linux/colony_updater dist/colony_updater-linux-x64
+          cp linux/colony_indexer dist/colony_indexer-linux-x64
           cp windows/ColonyFinder.exe dist/ColonyFinder-windows-x64.exe
           cp windows/colony_updater.exe dist/colony_updater-windows-x64.exe
-          chmod +x dist/ColonyFinder-linux-x64 dist/colony_updater-linux-x64
+          cp windows/colony_indexer.exe dist/colony_indexer-windows-x64.exe
+          chmod +x dist/ColonyFinder-linux-x64 dist/colony_updater-linux-x64 dist/colony_indexer-linux-x64
           (cd dist && zip ColonyFinder-linux-x64.zip ColonyFinder-linux-x64 colony_updater-linux-x64)
           (cd dist && zip ColonyFinder-windows-x64.zip ColonyFinder-windows-x64.exe colony_updater-windows-x64.exe)
 
@@ -141,7 +145,7 @@ jobs:
           echo "**Download the \`.zip\` archive for your platform** (\`ColonyFinder-windows-x64.zip\` or \`ColonyFinder-linux-x64.zip\`)." >> vt_notes.md
           echo "It contains both \`ColonyFinder\` and \`colony_updater\`, which must live in the same folder for the auto-updater to work." >> vt_notes.md
           echo "" >> vt_notes.md
-          echo "The standalone binaries (\`ColonyFinder-*-x64\`, \`colony_updater-*-x64\`) are published for users who want to refresh a single component, but a fresh install should use the zip." >> vt_notes.md
+          echo "The standalone binaries (\`ColonyFinder-*-x64\`, \`colony_updater-*-x64\`, \`colony_indexer-*-x64\`) are published for users who want to refresh a single component, but a fresh install should use the zip." >> vt_notes.md
           echo "" >> vt_notes.md
           echo "## Security scan" >> vt_notes.md
           echo "" >> vt_notes.md
@@ -167,6 +171,8 @@ jobs:
             dist/ColonyFinder-windows-x64.exe
             dist/colony_updater-linux-x64
             dist/colony_updater-windows-x64.exe
+            dist/colony_indexer-linux-x64
+            dist/colony_indexer-windows-x64.exe
             dist/ColonyFinder-linux-x64.zip
             dist/ColonyFinder-windows-x64.zip
           body_path: vt_notes.md

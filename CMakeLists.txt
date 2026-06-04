@@ -230,8 +230,65 @@ if (WIN32)
   set_target_properties(colony_updater PROPERTIES WIN32_EXECUTABLE FALSE)
 endif()
 
+add_executable(colony_indexer
+    "src/server_indexer_tool/main.cpp"
+    "src/server_indexer_tool/ArgumentParser.cpp"
+    "src/server_indexer_tool/ArgumentParser.h"
+    "src/server_indexer_tool/CliSelfUpdater.cpp"
+    "src/server_indexer_tool/CliSelfUpdater.h"
+    "src/server_indexer_tool/CliAppController.cpp"
+    "src/server_indexer_tool/CliAppController.h"
+    "src/download/DownloadSubject.cpp"
+    "src/download/DownloadSubject.h"
+    "src/download/HttpDownloader.cpp"
+    "src/download/HttpDownloader.h"
+    "src/download/GzipDecompressor.cpp"
+    "src/download/GzipDecompressor.h"
+    "src/download/JsonStreamValidator.cpp"
+    "src/download/JsonStreamValidator.h"
+    "src/download/DynamicSaxValidator.h"
+    "src/download/PipeStreamBuf.cpp"
+    "src/download/PipeStreamBuf.h"
+    "src/download/StreamingProcessor.cpp"
+    "src/download/StreamingProcessor.h"
+    "src/download/DatabaseService.cpp"
+    "src/download/DatabaseService.h"
+    "src/download/DatabaseObserver.h"
+    "src/download/DownloadObserver.h"
+    "src/search/CompositeJsonSax.h"
+    "src/search/SimdjsonIndexer.cpp"
+    "src/search/SimdjsonIndexer.h"
+    "src/download/LineSink.cpp"
+    "src/download/LineSink.h"
+    "src/search/SystemIndex.h"
+    "src/search/IndexProgressStreamBuf.h"
+    "src/search/IndexBuilderSax.cpp"
+    "src/search/IndexBuilderSax.h"
+    "src/search/IndexBuilder.cpp"
+    "src/search/IndexBuilder.h"
+    "src/ui/SettingsService.cpp"
+    "src/ui/SettingsService.h"
+    "src/ui/SettingsObserver.h"
+    "src/update/IUpdateChecker.h"
+    "src/update/GithubUpdateChecker.cpp"
+    "src/update/GithubUpdateChecker.h"
+    "src/update/UpdaterLauncher.cpp"
+    "src/update/UpdaterLauncher.h"
+)
+set_property(TARGET colony_indexer PROPERTY CXX_STANDARD 20)
+target_include_directories(colony_indexer PRIVATE src ${CMAKE_CURRENT_BINARY_DIR}/generated)
+if (WIN32)
+  target_link_libraries(colony_indexer PRIVATE libcurl zlibstatic nlohmann_json simdjson ole32 uuid)
+else()
+  target_link_libraries(colony_indexer PRIVATE libcurl zlib nlohmann_json simdjson)
+endif()
+
 add_custom_command(TARGET ColonyFinder POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:colony_updater>
         $<TARGET_FILE_DIR:ColonyFinder>/$<TARGET_FILE_NAME:colony_updater>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:colony_indexer>
+        $<TARGET_FILE_DIR:ColonyFinder>/$<TARGET_FILE_NAME:colony_indexer>
 )
+
