@@ -1,5 +1,6 @@
 #include "ui/states/SelectDownloadState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "download/DatabaseService.h"
 #include "ui/SettingsService.h"
 #include "ui/states/WelcomeState.h"
@@ -17,22 +18,22 @@ constexpr double BytesInGb = 1073741824.0;
 void SelectDownloadState::Render(AppController* controller)
 {
     DatabaseService::GetInstance().FetchOnlineSizes();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: SPANSH DATABASE SETUP");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::Setup::Title);
     ImGui::Separator();
     ImGui::Spacing();
 
     ImGui::Columns(2, nullptr, false);
 
-    ImGui::TextColored(controller->GetTheme().orangeActive, "[Download] Online Downloader");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Setup::OnlineSection);
     ImGui::Spacing();
-    ImGui::TextWrapped("Download the data dump directly from Spansh servers.");
+    ImGui::TextWrapped("%s", UiStrings::Setup::OnlineDescription);
     ImGui::Spacing();
 
-    ImGui::Text("Target Directory:");
+    ImGui::Text("%s", UiStrings::Common::TargetDirectory);
     ImGui::TextColored(controller->GetTheme().textNormal, "%s", SettingsService::GetInstance().GetDownloadDir().c_str());
 
     float availWidthCol1 = ImGui::GetContentRegionAvail().x;
-    if (ImGui::Button("Browse Target Dir...", ImVec2(availWidthCol1, controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::Common::BrowseTargetDir, ImVec2(availWidthCol1, controller->GetTheme().buttonHeightSmall)))
     {
         std::string path = SelectFolderDialog();
         if (!path.empty())
@@ -46,16 +47,16 @@ void SelectDownloadState::Render(AppController* controller)
     char btnText1Month[128];
     if (size1MonthVal == -1.0)
     {
-        std::snprintf(btnText1Month, sizeof(btnText1Month), "Download Galaxy 1 Month (Querying...)");
+        std::snprintf(btnText1Month, sizeof(btnText1Month), "%s", UiStrings::Setup::DownloadGalaxy1MonthBusy);
     }
     else if (size1MonthVal == -2.0)
     {
-        std::snprintf(btnText1Month, sizeof(btnText1Month), "Download Galaxy 1 Month (~16.0 GB) (Offline)");
+        std::snprintf(btnText1Month, sizeof(btnText1Month), "%s", UiStrings::Setup::DownloadGalaxy1MonthOff);
     }
     else
     {
         double sizeGb = size1MonthVal / BytesInGb;
-        std::snprintf(btnText1Month, sizeof(btnText1Month), "Download Galaxy 1 Month (%.2f GB)", sizeGb);
+        std::snprintf(btnText1Month, sizeof(btnText1Month), UiStrings::Setup::DownloadGalaxy1MonthFmt, sizeGb);
     }
 
     if (ImGui::Button(btnText1Month, ImVec2(availWidthCol1, controller->GetButtonHeightMedium())))
@@ -69,16 +70,16 @@ void SelectDownloadState::Render(AppController* controller)
     char btnTextFull[128];
     if (sizeFullVal == -1.0)
     {
-        std::snprintf(btnTextFull, sizeof(btnTextFull), "Download Full Galaxy (Querying...)");
+        std::snprintf(btnTextFull, sizeof(btnTextFull), "%s", UiStrings::Setup::DownloadGalaxyFullBusy);
     }
     else if (sizeFullVal == -2.0)
     {
-        std::snprintf(btnTextFull, sizeof(btnTextFull), "Download Full Galaxy (~100.0 GB) (Offline)");
+        std::snprintf(btnTextFull, sizeof(btnTextFull), "%s", UiStrings::Setup::DownloadGalaxyFullOff);
     }
     else
     {
         double sizeGb = sizeFullVal / BytesInGb;
-        std::snprintf(btnTextFull, sizeof(btnTextFull), "Download Full Galaxy (%.2f GB)", sizeGb);
+        std::snprintf(btnTextFull, sizeof(btnTextFull), UiStrings::Setup::DownloadGalaxyFullFmt, sizeGb);
     }
 
     if (ImGui::Button(btnTextFull, ImVec2(availWidthCol1, controller->GetButtonHeightMedium())))
@@ -89,16 +90,16 @@ void SelectDownloadState::Render(AppController* controller)
 
     ImGui::NextColumn();
 
-    ImGui::TextColored(controller->GetTheme().orangeActive, "[Local] Database Link");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Setup::LocalSection);
     ImGui::Spacing();
-    ImGui::TextWrapped("Search for a database file already stored in your storage.");
+    ImGui::TextWrapped("%s", UiStrings::Setup::LocalDescription);
     ImGui::Spacing();
 
-    ImGui::Text("Search Directory:");
+    ImGui::Text("%s", UiStrings::Common::SearchDirectory);
     ImGui::TextColored(controller->GetTheme().textNormal, "%s", SettingsService::GetInstance().GetSearchDir().c_str());
 
     float availWidthCol2 = ImGui::GetContentRegionAvail().x;
-    if (ImGui::Button("Browse Search Dir...", ImVec2(availWidthCol2, controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::Common::BrowseSearchDir, ImVec2(availWidthCol2, controller->GetTheme().buttonHeightSmall)))
     {
         std::string path = SelectFolderDialog();
         if (!path.empty())
@@ -116,16 +117,16 @@ void SelectDownloadState::Render(AppController* controller)
     const std::string& detected = DatabaseService::GetInstance().GetCurrentFilePath();
     if (!detected.empty())
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess, "[+] Detected: %s", detected.c_str());
+        ImGui::TextColored(controller->GetTheme().textSuccess, UiStrings::Setup::DetectedFmt, detected.c_str());
         ImGui::Spacing();
-        if (ImGui::Button("Use This Database", ImVec2(availWidthCol2, controller->GetButtonHeightMedium())))
+        if (ImGui::Button(UiStrings::Setup::UseThisDatabase, ImVec2(availWidthCol2, controller->GetButtonHeightMedium())))
         {
             DatabaseService::GetInstance().EnterApplicationFlow();
         }
     }
     else
     {
-        ImGui::TextColored(controller->GetTheme().textMuted, "No Spansh dump detected in this directory.");
+        ImGui::TextColored(controller->GetTheme().textMuted, "%s", UiStrings::Setup::NoLocalDump);
     }
 
     ImGui::Columns(1);
@@ -133,10 +134,10 @@ void SelectDownloadState::Render(AppController* controller)
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::TextColored(controller->GetTheme().orangeActive, "[Prebuilt] Download Ready-Made Index");
-    ImGui::TextWrapped("Skip extraction and indexing by downloading a prebuilt index file. Only use trusted sources.");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Setup::PrebuiltSection);
+    ImGui::TextWrapped("%s", UiStrings::Setup::PrebuiltDescription);
     ImGui::Spacing();
-    if (ImGui::Button("Download Prebuilt Index...", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    if (ImGui::Button(UiStrings::Setup::PrebuiltOpenButton, ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
         controller->TransitionTo(std::make_unique<DownloadIndexState>());
         return;
@@ -168,30 +169,30 @@ void SelectDownloadState::Render(AppController* controller)
 
     int bufferSize = SettingsService::GetInstance().GetBufferSizeMb();
 
-    ImGui::TextColored(controller->GetTheme().orangeActive, "[Settings] Decompression Memory Allocation");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Setup::MemorySection);
     ImGui::Spacing();
-    ImGui::Text("System RAM: %.1f GB Total, %.1f GB Available", totalRamGb, availRamGb);
-    ImGui::Text("Recommended allocation: %d MB", recommendedMb);
+    ImGui::Text(UiStrings::Setup::SystemRamFmt, totalRamGb, availRamGb);
+    ImGui::Text(UiStrings::Setup::RecommendedFmt, recommendedMb);
 
-    if (ImGui::SliderInt("Decompression Buffer Size (MB)", &bufferSize, 1, 64))
+    if (ImGui::SliderInt(UiStrings::Setup::BufferSliderLabel, &bufferSize, 1, 64))
     {
         SettingsService::GetInstance().SetBufferSizeMb(bufferSize);
     }
 
     if (bufferSize > warningThresholdMb)
     {
-        ImGui::TextColored(controller->GetTheme().orangePrimary, "Warning: High allocation may cause system slowdown or swapping on low memory.");
+        ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::Setup::HighAllocWarning);
     }
 
     ImGui::Spacing();
     ImGui::Separator();
 
-    if (ImGui::Button("< Back", ImVec2(controller->GetTheme().buttonWidthSmall, controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::Common::Back, ImVec2(controller->GetTheme().buttonWidthSmall, controller->GetTheme().buttonHeightSmall)))
     {
         controller->TransitionTo(std::make_unique<WelcomeState>());
     }
     ImGui::SameLine();
-    if (ImGui::Button("Update Schema", ImVec2(controller->GetTheme().buttonWidthSmall * 1.4f, controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::Setup::UpdateSchema, ImVec2(controller->GetTheme().buttonWidthSmall * 1.4f, controller->GetTheme().buttonHeightSmall)))
     {
         DatabaseService::GetInstance().StartSchemaUpdate();
     }

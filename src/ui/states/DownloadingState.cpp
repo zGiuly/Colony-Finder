@@ -1,5 +1,6 @@
 #include "ui/states/DownloadingState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
 #include "imgui.h"
@@ -10,11 +11,11 @@ constexpr double BytesInMb = 1048576.0;
 void DownloadingState::Render(AppController* controller)
 {
     ImGui::Spacing();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: DOWNLOADING DATABASE");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::DownloadDump::Title);
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::TextWrapped("The database is currently downloading in the background. Do NOT close the application during this process, otherwise the downloaded files might get corrupted.");
+    ImGui::TextWrapped("%s", UiStrings::DownloadDump::Notice);
     ImGui::Spacing();
 
     auto& db = DatabaseService::GetInstance();
@@ -35,18 +36,18 @@ void DownloadingState::Render(AppController* controller)
         double remainingSeconds = (totalMb - currentMb) / speedMb;
         int min = static_cast<int>(remainingSeconds) / 60;
         int sec = static_cast<int>(remainingSeconds) % 60;
-        std::snprintf(statusText, sizeof(statusText), "Progress: %.1f MB / %.1f MB | Speed: %.2f MB/s | Est. Time Left: %dm %ds", currentMb, totalMb, speedMb, min, sec);
+        std::snprintf(statusText, sizeof(statusText), UiStrings::DownloadDump::StatusFmt, currentMb, totalMb, speedMb, min, sec);
     }
     else
     {
-        std::snprintf(statusText, sizeof(statusText), "Progress: %.1f MB / %.1f MB | Speed: 0.00 MB/s | Est. Time Left: Calculating...", currentMb, totalMb);
+        std::snprintf(statusText, sizeof(statusText), UiStrings::DownloadDump::StatusCalcFmt, currentMb, totalMb);
     }
     ImGui::TextColored(controller->GetTheme().textNormal, "%s", statusText);
 
     ImGui::Spacing();
     ImGui::Spacing();
 
-    if (ImGui::Button("Cancel Download", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    if (ImGui::Button(UiStrings::Common::CancelDownload, ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
         db.CancelDownload();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());

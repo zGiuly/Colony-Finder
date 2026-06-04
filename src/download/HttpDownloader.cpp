@@ -1,4 +1,5 @@
 #include "download/HttpDownloader.h"
+#include "common/Messages.h"
 #include <curl/curl.h>
 #include <fstream>
 #include <thread>
@@ -201,7 +202,7 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
     double contentLength = GetContentLength(url, &isCancelled);
     if (contentLength <= 0.0)
     {
-        NotifyDownloadFailed("Failed to retrieve file size.");
+        NotifyDownloadFailed(Messages::Download::GetSizeFailed);
         return false;
     }
 
@@ -214,7 +215,7 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
         std::ofstream out(destinationPath, std::ios::binary | std::ios::out);
         if (!out.is_open())
         {
-            NotifyDownloadFailed("Failed to create destination file.");
+            NotifyDownloadFailed(Messages::Download::CreateDestinationFailed);
             return false;
         }
         out.seekp(totalSize - 1);
@@ -278,13 +279,13 @@ bool HttpDownloader::Download(const std::string& url, const std::string& destina
 
     if (isCancelled.load())
     {
-        NotifyDownloadFailed("Download cancelled.");
+        NotifyDownloadFailed(Messages::Download::Cancelled);
         return false;
     }
 
     if (totalDownloadedBytes < totalSize)
     {
-        NotifyDownloadFailed("Download incomplete.");
+        NotifyDownloadFailed(Messages::Download::Incomplete);
         return false;
     }
 

@@ -1,4 +1,5 @@
 #include "update/UpdateService.h"
+#include "common/Messages.h"
 #include "update/UpdaterLauncher.h"
 #include <curl/curl.h>
 #include <filesystem>
@@ -121,7 +122,7 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
 {
     if (targetBinaryPath.empty())
     {
-        NotifyUpdateFailed("cannot resolve current executable path");
+        NotifyUpdateFailed(Messages::Update::CannotResolveExePath);
         working = false;
         return;
     }
@@ -137,7 +138,7 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
 #endif
     if (!fp)
     {
-        NotifyUpdateFailed("cannot open temp file");
+        NotifyUpdateFailed(Messages::Update::CannotOpenTempFile);
         working = false;
         return;
     }
@@ -146,7 +147,7 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
     if (!curl)
     {
         fclose(fp);
-        NotifyUpdateFailed("curl init failed");
+        NotifyUpdateFailed(Messages::Update::CurlInitFailed);
         working = false;
         return;
     }
@@ -186,7 +187,7 @@ void UpdateService::DoDownloadAndApply(std::string downloadUrl)
     {
         std::error_code ec;
         std::filesystem::remove(tmpFile, ec);
-        NotifyUpdateFailed(std::string("download failed: ") + curl_easy_strerror(rc));
+        NotifyUpdateFailed(std::string(Messages::Update::DownloadFailedPrefix) + curl_easy_strerror(rc));
         working = false;
         return;
     }

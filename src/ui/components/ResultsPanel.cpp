@@ -1,5 +1,6 @@
 #include "ui/components/ResultsPanel.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "ui/UiUtils.h"
 #include "imgui.h"
 #include <algorithm>
@@ -42,21 +43,19 @@ void ResultsPanel::Render(AppController* controller)
 
 void ResultsPanel::RenderIdle(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().textNormal,
-        "Configure the filters on the left panel and click 'RUN QUERY' to locate systems.");
+    ImGui::TextColored(controller->GetTheme().textNormal, "%s", UiStrings::Results::HintRunQuery);
 }
 
 void ResultsPanel::RenderSearching(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().orangeActive, "Searching...");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Results::Searching);
     ImGui::Spacing();
     UiUtils::DrawSpinner(18.0f, 3.5f, ImGui::GetColorU32(controller->GetTheme().orangePrimary));
 }
 
 void ResultsPanel::RenderEmpty(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().textAlert,
-        "No systems found matching the specified search criteria.");
+    ImGui::TextColored(controller->GetTheme().textAlert, "%s", UiStrings::Results::NoneFound);
 }
 
 void ResultsPanel::RenderResults(AppController* controller)
@@ -70,12 +69,11 @@ void ResultsPanel::RenderResults(AppController* controller)
 
     if (results.size() >= maxResultsCap)
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess,
-            "Found %zu+ systems (cap reached, refine filters for more):", results.size());
+        ImGui::TextColored(controller->GetTheme().textSuccess, UiStrings::Results::FoundCappedFmt, results.size());
     }
     else
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess, "Found %zu systems:", results.size());
+        ImGui::TextColored(controller->GetTheme().textSuccess, UiStrings::Results::FoundFmt, results.size());
     }
     ImGui::Spacing();
 
@@ -87,13 +85,13 @@ void ResultsPanel::RenderResults(AppController* controller)
 void ResultsPanel::RenderPager(AppController* controller, int totalPages, size_t startIdx, size_t endIdx)
 {
     ImGui::BeginDisabled(currentPage <= 0);
-    if (ImGui::Button("< Prev", ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage--;
+    if (ImGui::Button(UiStrings::Results::PrevPage, ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage--;
     ImGui::EndDisabled();
     ImGui::SameLine();
-    ImGui::Text("Page %d / %d  (showing %zu-%zu)", currentPage + 1, totalPages, startIdx + 1, endIdx);
+    ImGui::Text(UiStrings::Results::PageInfoFmt, currentPage + 1, totalPages, startIdx + 1, endIdx);
     ImGui::SameLine();
     ImGui::BeginDisabled(currentPage >= totalPages - 1);
-    if (ImGui::Button("Next >", ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage++;
+    if (ImGui::Button(UiStrings::Results::NextPage, ImVec2(controller->GetTheme().buttonWidthPager, 0.0f))) currentPage++;
     ImGui::EndDisabled();
 }
 
@@ -104,10 +102,10 @@ void ResultsPanel::RenderTable(AppController* controller, size_t startIdx, size_
 
     if (!ImGui::BeginTable("ResultsTable", 4, flags, ImVec2(0.0f, -1.0f))) return;
 
-    ImGui::TableSetupColumn("System Name", ImGuiTableColumnFlags_WidthStretch, 2.0f);
-    ImGui::TableSetupColumn("Distance", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-    ImGui::TableSetupColumn("Bodies", ImGuiTableColumnFlags_WidthStretch, 0.8f);
-    ImGui::TableSetupColumn("Population", ImGuiTableColumnFlags_WidthStretch, 1.5f);
+    ImGui::TableSetupColumn(UiStrings::Results::ColSystemName, ImGuiTableColumnFlags_WidthStretch, 2.0f);
+    ImGui::TableSetupColumn(UiStrings::Results::ColDistance, ImGuiTableColumnFlags_WidthStretch, 1.0f);
+    ImGui::TableSetupColumn(UiStrings::Results::ColBodies, ImGuiTableColumnFlags_WidthStretch, 0.8f);
+    ImGui::TableSetupColumn(UiStrings::Results::ColPopulation, ImGuiTableColumnFlags_WidthStretch, 1.5f);
     ImGui::TableHeadersRow();
 
     char popBuf[32];
@@ -128,7 +126,7 @@ void ResultsPanel::RenderTable(AppController* controller, size_t startIdx, size_
         std::snprintf(popupId, sizeof(popupId), "row_ctx_%zu", i);
         if (ImGui::BeginPopupContextItem(popupId, ImGuiPopupFlags_MouseButtonRight))
         {
-            if (ImGui::MenuItem("Copy system name"))
+            if (ImGui::MenuItem(UiStrings::Results::CopySystemName))
             {
                 ImGui::SetClipboardText(res.name.c_str());
             }
@@ -136,7 +134,7 @@ void ResultsPanel::RenderTable(AppController* controller, size_t startIdx, size_
         }
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%.2f Ly", res.distanceToSource);
+        ImGui::Text(UiStrings::Results::DistanceLyFmt, res.distanceToSource);
 
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("%d", res.bodyCount);

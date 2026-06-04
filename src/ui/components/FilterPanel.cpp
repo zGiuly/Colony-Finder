@@ -1,5 +1,6 @@
 #include "ui/components/FilterPanel.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "imgui.h"
 #include <cstring>
 #include <cstdio>
@@ -31,7 +32,7 @@ FilterPanel::FilterPanel()
 
 void FilterPanel::Render(AppController* controller)
 {
-    ImGui::TextColored(controller->GetTheme().orangeActive, "Location & Range");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::Filters::LocationSection);
     ImGui::Spacing();
 
     RenderLocationSection();
@@ -54,44 +55,44 @@ void FilterPanel::Render(AppController* controller)
 
 void FilterPanel::RenderLocationSection()
 {
-    ImGui::Text("Start System:");
+    ImGui::Text("%s", UiStrings::Filters::StartSystem);
     ImGui::InputText("##SourceSystem", sourceSystemBuf, sizeof(sourceSystemBuf));
     ImGui::Spacing();
 
-    ImGui::Checkbox("Filter Distance", &filters.filterDistance);
+    ImGui::Checkbox(UiStrings::Filters::FilterDistance, &filters.filterDistance);
     if (filters.filterDistance)
     {
-        ImGui::SliderFloat("Range (Ly)", &filters.maxDistanceLy, MinDistanceLy, MaxDistanceLy, "%.1f Ly");
+        ImGui::SliderFloat(UiStrings::Filters::RangeLy, &filters.maxDistanceLy, MinDistanceLy, MaxDistanceLy, UiStrings::Filters::RangeLyFormat);
     }
     ImGui::Spacing();
 
-    ImGui::Text("Filter Name:");
+    ImGui::Text("%s", UiStrings::Filters::FilterName);
     ImGui::InputText("##SystemQuery", systemQueryBuf, sizeof(systemQueryBuf));
     ImGui::Spacing();
 }
 
 void FilterPanel::RenderFiltersSection()
 {
-    ImGui::Checkbox("Colonized Only", &filters.colonizedOnly);
+    ImGui::Checkbox(UiStrings::Filters::ColonizedOnly, &filters.colonizedOnly);
     ImGui::Spacing();
 
-    ImGui::Checkbox("Filter Population", &filters.filterPopulation);
+    ImGui::Checkbox(UiStrings::Filters::FilterPopulation, &filters.filterPopulation);
     if (filters.filterPopulation)
     {
-        ImGui::InputScalar("Min Pop", ImGuiDataType_U64, &minPopBuf);
-        ImGui::InputScalar("Max Pop", ImGuiDataType_U64, &maxPopBuf);
+        ImGui::InputScalar(UiStrings::Filters::MinPop, ImGuiDataType_U64, &minPopBuf);
+        ImGui::InputScalar(UiStrings::Filters::MaxPop, ImGuiDataType_U64, &maxPopBuf);
         filters.minPopulation = minPopBuf;
         filters.maxPopulation = maxPopBuf;
     }
     ImGui::Spacing();
 
-    ImGui::Checkbox("Filter Body Count", &filters.filterBodyCount);
+    ImGui::Checkbox(UiStrings::Filters::FilterBodyCount, &filters.filterBodyCount);
     if (filters.filterBodyCount)
     {
         int minB = filters.minBodies;
         int maxB = filters.maxBodies;
-        ImGui::DragInt("Min Bodies", &minB, 1.0f, MinBodiesDefault, MaxBodiesDefault);
-        ImGui::DragInt("Max Bodies", &maxB, 1.0f, MinBodiesDefault, MaxBodiesDefault);
+        ImGui::DragInt(UiStrings::Filters::MinBodies, &minB, 1.0f, MinBodiesDefault, MaxBodiesDefault);
+        ImGui::DragInt(UiStrings::Filters::MaxBodies, &maxB, 1.0f, MinBodiesDefault, MaxBodiesDefault);
         filters.minBodies = static_cast<uint16_t>(minB);
         filters.maxBodies = static_cast<uint16_t>(maxB);
     }
@@ -100,29 +101,31 @@ void FilterPanel::RenderFiltersSection()
 
 void FilterPanel::RenderStarTypesSection()
 {
-    if (!ImGui::TreeNode("Star Types")) return;
+    if (!ImGui::TreeNode(UiStrings::Filters::StarTypesNode)) return;
 
-    ImGui::Checkbox("O Star", &starO);
-    ImGui::Checkbox("B Star", &starB);
-    ImGui::Checkbox("A Star", &starA);
-    ImGui::Checkbox("F Star", &starF);
-    ImGui::Checkbox("G Star", &starG);
-    ImGui::Checkbox("K Star", &starK);
-    ImGui::Checkbox("M Star", &starM);
-    ImGui::Checkbox("L/T/Y Dwarf", &starLTY);
-    ImGui::Checkbox("Neutron", &starNeutron);
-    ImGui::Checkbox("Black Hole", &starBlackHole);
-    ImGui::Checkbox("White Dwarf", &starWhiteDwarf);
+    ImGui::Checkbox(UiStrings::Filters::StarO, &starO);
+    ImGui::Checkbox(UiStrings::Filters::StarB, &starB);
+    ImGui::Checkbox(UiStrings::Filters::StarA, &starA);
+    ImGui::Checkbox(UiStrings::Filters::StarF, &starF);
+    ImGui::Checkbox(UiStrings::Filters::StarG, &starG);
+    ImGui::Checkbox(UiStrings::Filters::StarK, &starK);
+    ImGui::Checkbox(UiStrings::Filters::StarM, &starM);
+    ImGui::Checkbox(UiStrings::Filters::StarLTY, &starLTY);
+    ImGui::Checkbox(UiStrings::Filters::StarNeutron, &starNeutron);
+    ImGui::Checkbox(UiStrings::Filters::StarBlackHole, &starBlackHole);
+    ImGui::Checkbox(UiStrings::Filters::StarWhiteDwarf, &starWhiteDwarf);
     ImGui::TreePop();
 }
 
 void FilterPanel::RenderPlanetTypesSection()
 {
-    if (!ImGui::TreeNode("Planet Types")) return;
+    if (!ImGui::TreeNode(UiStrings::Filters::PlanetTypesNode)) return;
 
     static const char* labels[8] = {
-        "Earth-like (ELW)", "Water World (WW)", "Ammonia World (AMW)", "High Metal (HMC)",
-        "Metal-rich", "Rocky", "Icy", "Gas Giant"
+        UiStrings::Filters::PlanetEarthLike, UiStrings::Filters::PlanetWaterWorld,
+        UiStrings::Filters::PlanetAmmonia,   UiStrings::Filters::PlanetHighMetal,
+        UiStrings::Filters::PlanetMetalRich, UiStrings::Filters::PlanetRocky,
+        UiStrings::Filters::PlanetIcy,       UiStrings::Filters::PlanetGasGiant
     };
 
     for (int i = 0; i < 8; ++i)
@@ -133,9 +136,9 @@ void FilterPanel::RenderPlanetTypesSection()
         {
             ImGui::Indent();
             ImGui::PushItemWidth(60.0f);
-            ImGui::InputInt("Min", &bodyMin[i], 0, 0);
+            ImGui::InputInt(UiStrings::Filters::Min, &bodyMin[i], 0, 0);
             ImGui::SameLine();
-            ImGui::InputInt("Max", &bodyMax[i], 0, 0);
+            ImGui::InputInt(UiStrings::Filters::Max, &bodyMax[i], 0, 0);
             ImGui::PopItemWidth();
             if (bodyMin[i] < 0) bodyMin[i] = 0;
             if (bodyMax[i] > 255) bodyMax[i] = 255;
@@ -144,14 +147,14 @@ void FilterPanel::RenderPlanetTypesSection()
         }
         ImGui::PopID();
     }
-    ImGui::Checkbox("Landable Required", &bodyLandable);
+    ImGui::Checkbox(UiStrings::Filters::LandableRequired, &bodyLandable);
     ImGui::TreePop();
 }
 
 void FilterPanel::RenderActions(AppController* controller)
 {
     ImGui::BeginDisabled(busy);
-    if (ImGui::Button("RUN QUERY", ImVec2(-1.0f, controller->GetTheme().buttonHeightMedium)))
+    if (ImGui::Button(UiStrings::Filters::RunQuery, ImVec2(-1.0f, controller->GetTheme().buttonHeightMedium)))
     {
         BuildFiltersFromUi();
         if (listener) listener->OnRunQuery(filters);
@@ -159,7 +162,7 @@ void FilterPanel::RenderActions(AppController* controller)
     ImGui::EndDisabled();
     ImGui::Spacing();
 
-    if (ImGui::Button("Back to Setup", ImVec2(-1.0f, controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::Common::BackToSetup, ImVec2(-1.0f, controller->GetTheme().buttonHeightSmall)))
     {
         if (listener) listener->OnBackRequested();
     }

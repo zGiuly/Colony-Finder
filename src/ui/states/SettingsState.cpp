@@ -1,5 +1,6 @@
 #include "ui/states/SettingsState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "ui/SettingsService.h"
 #include "ui/states/WelcomeState.h"
 #include "imgui.h"
@@ -29,29 +30,29 @@ SettingsState::SettingsState(ReturnFactory factoryVal)
 void SettingsState::Render(AppController* controller)
 {
     ImGui::Spacing();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: APPLICATION SETTINGS");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::SettingsScreen::Title);
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::TextColored(controller->GetTheme().orangeActive, "[Theme] Color Customization");
-    ImGui::TextWrapped("Changes are applied immediately and saved automatically.");
+    ImGui::TextColored(controller->GetTheme().orangeActive, "%s", UiStrings::SettingsScreen::ThemeSection);
+    ImGui::TextWrapped("%s", UiStrings::SettingsScreen::ThemeNotice);
     ImGui::Spacing();
 
     const ThemeColors& c = SettingsService::GetInstance().GetThemeColors();
     const ColorEntry entries[] = {
-        { "Orange Primary",     SettingsService::ThemeColorId::OrangePrimary,   &c.orangePrimary },
-        { "Orange Muted",       SettingsService::ThemeColorId::OrangeMuted,     &c.orangeMuted },
-        { "Orange Active",      SettingsService::ThemeColorId::OrangeActive,    &c.orangeActive },
-        { "Background Dark",    SettingsService::ThemeColorId::BgDark,          &c.bgDark },
-        { "Background Panel",   SettingsService::ThemeColorId::BgPanel,         &c.bgPanel },
-        { "Text Normal",        SettingsService::ThemeColorId::TextNormal,      &c.textNormal },
-        { "Text Muted",         SettingsService::ThemeColorId::TextMuted,       &c.textMuted },
-        { "Text Alert",         SettingsService::ThemeColorId::TextAlert,       &c.textAlert },
-        { "Text Success",       SettingsService::ThemeColorId::TextSuccess,     &c.textSuccess },
-        { "Border",             SettingsService::ThemeColorId::Border,          &c.border },
-        { "Row Hover",          SettingsService::ThemeColorId::RowHover,        &c.rowHover },
-        { "Row Hover Active",   SettingsService::ThemeColorId::RowHoverActive,  &c.rowHoverActive },
-        { "Row Selected",       SettingsService::ThemeColorId::RowSelected,     &c.rowSelected },
+        { UiStrings::SettingsScreen::ColorOrangePrimary,   SettingsService::ThemeColorId::OrangePrimary,   &c.orangePrimary },
+        { UiStrings::SettingsScreen::ColorOrangeMuted,     SettingsService::ThemeColorId::OrangeMuted,     &c.orangeMuted },
+        { UiStrings::SettingsScreen::ColorOrangeActive,    SettingsService::ThemeColorId::OrangeActive,    &c.orangeActive },
+        { UiStrings::SettingsScreen::ColorBgDark,          SettingsService::ThemeColorId::BgDark,          &c.bgDark },
+        { UiStrings::SettingsScreen::ColorBgPanel,         SettingsService::ThemeColorId::BgPanel,         &c.bgPanel },
+        { UiStrings::SettingsScreen::ColorTextNormal,      SettingsService::ThemeColorId::TextNormal,      &c.textNormal },
+        { UiStrings::SettingsScreen::ColorTextMuted,       SettingsService::ThemeColorId::TextMuted,       &c.textMuted },
+        { UiStrings::SettingsScreen::ColorTextAlert,       SettingsService::ThemeColorId::TextAlert,       &c.textAlert },
+        { UiStrings::SettingsScreen::ColorTextSuccess,     SettingsService::ThemeColorId::TextSuccess,     &c.textSuccess },
+        { UiStrings::SettingsScreen::ColorBorder,          SettingsService::ThemeColorId::Border,          &c.border },
+        { UiStrings::SettingsScreen::ColorRowHover,        SettingsService::ThemeColorId::RowHover,        &c.rowHover },
+        { UiStrings::SettingsScreen::ColorRowHoverActive,  SettingsService::ThemeColorId::RowHoverActive,  &c.rowHoverActive },
+        { UiStrings::SettingsScreen::ColorRowSelected,     SettingsService::ThemeColorId::RowSelected,     &c.rowSelected },
     };
     for (const auto& entry : entries)
     {
@@ -62,7 +63,7 @@ void SettingsState::Render(AppController* controller)
         }
     }
     ImGui::Spacing();
-    if (ImGui::Button("Reset Theme to Defaults", ImVec2(controller->GetButtonWidthMedium(), controller->GetTheme().buttonHeightSmall)))
+    if (ImGui::Button(UiStrings::SettingsScreen::ResetTheme, ImVec2(controller->GetButtonWidthMedium(), controller->GetTheme().buttonHeightSmall)))
     {
         SettingsService::GetInstance().ResetThemeToDefaults();
     }
@@ -70,7 +71,7 @@ void SettingsState::Render(AppController* controller)
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    if (!ImGui::Button("< Back", ImVec2(controller->GetTheme().buttonWidthSmall, controller->GetTheme().buttonHeightSmall)))
+    if (!ImGui::Button(UiStrings::Common::Back, ImVec2(controller->GetTheme().buttonWidthSmall, controller->GetTheme().buttonHeightSmall)))
     {
         return;
     }

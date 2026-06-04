@@ -1,4 +1,5 @@
 #include "ui/UiUtils.h"
+#include "ui/UiStrings.h"
 #include <cmath>
 #include <cstdio>
 
@@ -31,7 +32,7 @@ namespace UiUtils
 
     void FormatPopulation(uint64_t pop, char* buf, size_t buflen)
     {
-        if (pop == 0) { std::snprintf(buf, buflen, "Uninhabited"); return; }
+        if (pop == 0) { std::snprintf(buf, buflen, "%s", UiStrings::Results::Uninhabited); return; }
         if (pop < 1000ULL) { std::snprintf(buf, buflen, "%llu", static_cast<unsigned long long>(pop)); return; }
         if (pop < 1000000ULL) { std::snprintf(buf, buflen, "%.1fK", pop / 1000.0); return; }
         if (pop < 1000000000ULL) { std::snprintf(buf, buflen, "%.2fM", pop / 1000000.0); return; }

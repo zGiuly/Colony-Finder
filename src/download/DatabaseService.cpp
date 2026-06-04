@@ -1,4 +1,5 @@
 #include "download/DatabaseService.h"
+#include "common/Messages.h"
 #include "download/HttpDownloader.h"
 #include "download/GzipDecompressor.h"
 #include "download/JsonStreamValidator.h"
@@ -205,7 +206,7 @@ void DatabaseService::StartPrebuiltIndexDownload(const std::string& url)
     }
     if (url.empty())
     {
-        NotifyDownloadFailed("Index URL is empty.");
+        NotifyDownloadFailed(Messages::Database::IndexUrlEmpty);
         return;
     }
     isBusy = true;
@@ -228,7 +229,7 @@ void DatabaseService::StartPrebuiltIndexDownload(const std::string& url)
         {
             std::error_code ec;
             std::filesystem::remove(destPath, ec);
-            NotifyDownloadFailed("Downloaded file is not a valid or compatible index.");
+            NotifyDownloadFailed(Messages::Database::PrebuiltIndexInvalid);
             return;
         }
 
@@ -301,7 +302,7 @@ void DatabaseService::StartSchemaUpdate()
         isUpdatingSchema = false;
         if (!success)
         {
-            NotifySchemaUpdateFailed("Failed to download schema.");
+            NotifySchemaUpdateFailed(Messages::Database::SchemaDownloadFailed);
             return;
         }
 
@@ -420,7 +421,7 @@ void DatabaseService::StartIndexing()
             std::filesystem::remove(indexPath, ec);
             if (!cancelIndexingFlag.load())
             {
-                NotifyIndexingFailed("Indexing failed. The JSON file could not be parsed.");
+                NotifyIndexingFailed(Messages::Database::IndexingJsonParseFailed);
             }
             return;
         }

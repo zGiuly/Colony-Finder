@@ -1,16 +1,17 @@
 #include "ui/states/SchemaUpdateState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "download/DatabaseService.h"
 #include "imgui.h"
 
 void SchemaUpdateState::Render(AppController* controller)
 {
     ImGui::Spacing();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: UPDATING DATABASE SCHEMA");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::SchemaUpdate::Title);
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::TextWrapped("Downloading Spansh schema file...");
+    ImGui::TextWrapped("%s", UiStrings::SchemaUpdate::Notice);
     ImGui::Spacing();
 
     auto& db = DatabaseService::GetInstance();

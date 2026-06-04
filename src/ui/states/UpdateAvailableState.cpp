@@ -1,5 +1,6 @@
 #include "ui/states/UpdateAvailableState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "ui/states/WelcomeState.h"
 #include "update/UpdateService.h"
 #include "Version.h"
@@ -14,18 +15,18 @@ UpdateAvailableState::UpdateAvailableState(const std::string& latestVersionVal, 
 void UpdateAvailableState::Render(AppController* controller)
 {
     ImGui::Spacing();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ">> UPDATE AVAILABLE");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::UpdateAvailable::Title);
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::Text("Current version: %s", COLONYFINDER_VERSION_STRING);
-    ImGui::Text("Latest  version: %s", latestVersion.c_str());
+    ImGui::Text(UiStrings::UpdateAvailable::CurrentFmt, COLONYFINDER_VERSION_STRING);
+    ImGui::Text(UiStrings::UpdateAvailable::LatestFmt, latestVersion.c_str());
     ImGui::Spacing();
 
     if (controller->IsUpdateReady())
     {
-        ImGui::TextColored(controller->GetTheme().textSuccess, "[+] Update downloaded. Restart to apply.");
+        ImGui::TextColored(controller->GetTheme().textSuccess, "%s", UiStrings::UpdateAvailable::Downloaded);
         ImGui::Spacing();
-        if (ImGui::Button("RESTART NOW >", ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightLarge())))
+        if (ImGui::Button(UiStrings::UpdateAvailable::RestartNow, ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightLarge())))
         {
             UpdateService::GetInstance().RestartIntoUpdate();
             std::exit(0);
@@ -35,20 +36,20 @@ void UpdateAvailableState::Render(AppController* controller)
 
     if (downloadStarted)
     {
-        ImGui::TextColored(controller->GetTheme().textAlert, "[~] Downloading update...");
+        ImGui::TextColored(controller->GetTheme().textAlert, "%s", UiStrings::UpdateAvailable::Downloading);
         ImGui::ProgressBar(static_cast<float>(controller->GetUpdateDownloadProgress()), ImVec2(-1.0f, 0.0f));
         return;
     }
 
-    ImGui::TextWrapped("A newer version of ColonyFinder is available. Update now?");
+    ImGui::TextWrapped("%s", UiStrings::UpdateAvailable::Prompt);
     ImGui::Spacing();
-    if (ImGui::Button("UPDATE NOW >", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    if (ImGui::Button(UiStrings::UpdateAvailable::UpdateNow, ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
         downloadStarted = true;
         UpdateService::GetInstance().DownloadAndApplyAsync(downloadUrl);
     }
     ImGui::SameLine();
-    if (ImGui::Button("SKIP", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    if (ImGui::Button(UiStrings::UpdateAvailable::Skip, ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
         controller->TransitionTo(std::make_unique<WelcomeState>());
     }

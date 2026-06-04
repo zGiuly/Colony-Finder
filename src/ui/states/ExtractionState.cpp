@@ -1,5 +1,6 @@
 #include "ui/states/ExtractionState.h"
 #include "ui/AppController.h"
+#include "ui/UiStrings.h"
 #include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
 #include "imgui.h"
@@ -7,13 +8,13 @@
 void ExtractionState::Render(AppController* controller)
 {
     ImGui::Spacing();
-    ImGui::TextColored(controller->GetTheme().orangePrimary, ":: PROCESS DATABASE FILES");
+    ImGui::TextColored(controller->GetTheme().orangePrimary, "%s", UiStrings::Extraction::Title);
     ImGui::Separator();
     ImGui::Spacing();
 
     auto& db = DatabaseService::GetInstance();
 
-    ImGui::Text("Decompressing & indexing Spansh dump (streaming)...");
+    ImGui::Text("%s", UiStrings::Extraction::Notice);
     ImGui::ProgressBar(db.GetExtractionProgress(), ImVec2(-1.0f, controller->GetTheme().progressBarHeight));
 
     double remaining = db.GetExtractionTimeRemaining();
@@ -23,22 +24,22 @@ void ExtractionState::Render(AppController* controller)
         int seconds = static_cast<int>(remaining) % 60;
         if (minutes > 0)
         {
-            ImGui::Text("Estimated time remaining: %dm %ds", minutes, seconds);
+            ImGui::Text(UiStrings::Extraction::EtaMinSecFmt, minutes, seconds);
         }
         else
         {
-            ImGui::Text("Estimated time remaining: %ds", seconds);
+            ImGui::Text(UiStrings::Extraction::EtaSecFmt, seconds);
         }
     }
     else
     {
-        ImGui::Text("Estimated time remaining: Calculating...");
+        ImGui::Text("%s", UiStrings::Extraction::EtaCalculating);
     }
 
     ImGui::Spacing();
     ImGui::Spacing();
 
-    if (ImGui::Button("Cancel", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    if (ImGui::Button(UiStrings::Common::Cancel, ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
     {
         db.CancelExtraction();
         db.CancelIndexing();

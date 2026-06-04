@@ -8,6 +8,7 @@
 #include "ui/states/DownloadingState.h"
 #include "ui/states/DownloadIndexState.h"
 #include "ui/states/DownloadingIndexState.h"
+#include "ui/UiStrings.h"
 #include "ui/states/ExtractionState.h"
 #include "ui/states/IndexOutdatedState.h"
 #include "ui/states/SchemaUpdateState.h"
@@ -50,7 +51,7 @@ bool AppController::Initialize()
         SettingsService::GetInstance().GetSearchDir()
     );
 
-    if (!windowManager->Initialize("ColonyFinder - Elite Dangerous Tool", WindowWidth, WindowHeight))
+    if (!windowManager->Initialize(UiStrings::App::WindowTitle, WindowWidth, WindowHeight))
     {
         return false;
     }
@@ -126,7 +127,7 @@ void AppController::OnDownloadFailed(const std::string& error)
         TransitionTo(std::make_unique<ErrorState>());
         return;
     }
-    TransitionTo(std::make_unique<ErrorState>("< RETURN TO INDEX DOWNLOAD", []() -> std::unique_ptr<IAppState> {
+    TransitionTo(std::make_unique<ErrorState>(UiStrings::Error::IndexBackLabel, []() -> std::unique_ptr<IAppState> {
         return std::make_unique<DownloadIndexState>();
     }));
 }

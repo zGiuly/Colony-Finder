@@ -1,4 +1,5 @@
 #include "download/StreamingProcessor.h"
+#include "common/Messages.h"
 #include "download/GzipDecompressor.h"
 #include "download/LineSink.h"
 #include "search/SimdjsonIndexer.h"
@@ -129,7 +130,7 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
             }
             workers.push_back(std::move(w));
             cleanupWorkerFiles();
-            result.errorMessage = "Failed to open worker tmp files.";
+            result.errorMessage = Messages::Streaming::WorkerTmpOpenFailed;
             return result;
         }
         w->indexer = std::make_unique<SimdjsonIndexer>(w->recFile, w->strFile, w->systemCount, w->stringOffset, cancelFlag);
@@ -203,7 +204,7 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
     if (!decompressOk)
     {
         result.decompressionFailed = true;
-        result.errorMessage = "Decompression failed. The downloaded file may be corrupted.";
+        result.errorMessage = Messages::Streaming::DecompressionFailed;
         cleanupWorkerFiles();
         return result;
     }
@@ -214,7 +215,7 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
     if (totalSystems == 0)
     {
         result.indexingFailed = true;
-        result.errorMessage = "Indexing produced no systems. The JSON format may be unexpected.";
+        result.errorMessage = Messages::Streaming::NoSystemsIndexed;
         cleanupWorkerFiles();
         return result;
     }
@@ -223,7 +224,7 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
     if (!outFile.is_open())
     {
         result.indexingFailed = true;
-        result.errorMessage = "Failed to open index output file.";
+        result.errorMessage = Messages::Streaming::IndexOutputOpenFailed;
         cleanupWorkerFiles();
         return result;
     }
@@ -251,7 +252,7 @@ StreamingProcessor::Result StreamingProcessor::Process(const std::string& gzPath
             std::filesystem::remove(indexPath, ec);
             cleanupWorkerFiles();
             result.indexingFailed = true;
-            result.errorMessage = "Failed to read worker records.";
+            result.errorMessage = Messages::Streaming::WorkerReadFailed;
             return result;
         }
         constexpr size_t RecsPerBatch = MergeBufferSize / sizeof(SystemIndex::Record);
