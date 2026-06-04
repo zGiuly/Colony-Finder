@@ -6,6 +6,7 @@
 #include "ui/FolderDialog.h"
 #include "ui/states/ErrorState.h"
 #include "ui/states/DownloadingState.h"
+#include "ui/states/DownloadIndexState.h"
 #include "ui/SystemMemory.h"
 #include "imgui.h"
 #include <cstdio>
@@ -128,6 +129,18 @@ void SelectDownloadState::Render(AppController* controller)
     }
 
     ImGui::Columns(1);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::TextColored(controller->GetTheme().orangeActive, "[Prebuilt] Download Ready-Made Index");
+    ImGui::TextWrapped("Skip extraction and indexing by downloading a prebuilt index file. Only use trusted sources.");
+    ImGui::Spacing();
+    if (ImGui::Button("Download Prebuilt Index...", ImVec2(controller->GetButtonWidthMedium(), controller->GetButtonHeightMedium())))
+    {
+        controller->TransitionTo(std::make_unique<DownloadIndexState>());
+        return;
+    }
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();

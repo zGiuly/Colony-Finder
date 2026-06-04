@@ -25,7 +25,10 @@ public:
     void SetCurrentFilePath(const std::string& path) { currentFilePath = path; }
 
     void StartDownload(const std::string& url);
+    void StartPrebuiltIndexDownload(const std::string& url);
     void CancelDownload();
+
+    static const char* GetOfficialIndexUrl();
 
     void StartSchemaUpdate();
     void StartExtractionAndValidation();

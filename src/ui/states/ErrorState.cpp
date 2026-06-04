@@ -3,6 +3,22 @@
 #include "ui/states/SelectDownloadState.h"
 #include "download/DatabaseService.h"
 #include "imgui.h"
+#include <utility>
+
+ErrorState::ErrorState()
+    : buttonLabel("< RETURN TO SETUP"),
+      factory([]() -> std::unique_ptr<IAppState> {
+          DatabaseService::GetInstance().FetchOnlineSizes();
+          return std::make_unique<SelectDownloadState>();
+      })
+{
+}
+
+ErrorState::ErrorState(std::string buttonLabelVal, ReturnFactory factoryVal)
+    : buttonLabel(std::move(buttonLabelVal)),
+      factory(std::move(factoryVal))
+{
+}
 
 void ErrorState::Render(AppController* controller)
 {
@@ -13,9 +29,13 @@ void ErrorState::Render(AppController* controller)
     ImGui::Spacing();
     ImGui::Spacing();
 
-    if (ImGui::Button("< RETURN TO SETUP", ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightMedium())))
+    if (!ImGui::Button(buttonLabel.c_str(), ImVec2(controller->GetButtonWidthLarge(), controller->GetButtonHeightMedium())))
     {
-        DatabaseService::GetInstance().FetchOnlineSizes();
-        controller->TransitionTo(std::make_unique<SelectDownloadState>());
+        return;
     }
+    if (!factory)
+    {
+        return;
+    }
+    controller->TransitionTo(factory());
 }

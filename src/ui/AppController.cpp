@@ -6,6 +6,8 @@
 #include "ui/states/WelcomeState.h"
 #include "ui/states/SelectDownloadState.h"
 #include "ui/states/DownloadingState.h"
+#include "ui/states/DownloadIndexState.h"
+#include "ui/states/DownloadingIndexState.h"
 #include "ui/states/ExtractionState.h"
 #include "ui/states/IndexOutdatedState.h"
 #include "ui/states/SchemaUpdateState.h"
@@ -117,7 +119,16 @@ void AppController::OnDownloadCompleted()
 void AppController::OnDownloadFailed(const std::string& error)
 {
     errorMessage = error;
-    TransitionTo(std::make_unique<ErrorState>());
+    bool fromPrebuiltIndex = dynamic_cast<DownloadingIndexState*>(currentState.get()) != nullptr
+                          || dynamic_cast<DownloadIndexState*>(currentState.get()) != nullptr;
+    if (!fromPrebuiltIndex)
+    {
+        TransitionTo(std::make_unique<ErrorState>());
+        return;
+    }
+    TransitionTo(std::make_unique<ErrorState>("< RETURN TO INDEX DOWNLOAD", []() -> std::unique_ptr<IAppState> {
+        return std::make_unique<DownloadIndexState>();
+    }));
 }
 
 void AppController::OnSchemaUpdateProgress(float)

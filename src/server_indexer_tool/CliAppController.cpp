@@ -1,4 +1,5 @@
 #include "CliAppController.h"
+#include "ArgumentParser.h"
 #include "download/DatabaseService.h"
 #include "ui/SettingsService.h"
 #include "CliSelfUpdater.h"

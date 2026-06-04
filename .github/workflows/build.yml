@@ -166,6 +166,7 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: |
             dist/ColonyFinder-linux-x64
             dist/ColonyFinder-windows-x64.exe

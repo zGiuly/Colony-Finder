@@ -15,6 +15,9 @@
 constexpr int ThreadCount = 1;
 constexpr double ErrorSizeCode = -2.0;
 constexpr double DefaultInitSize = -1.0;
+constexpr const char* OfficialIndexUrl = "https://github.com/zGiuly/Colony-Finder/releases/latest/download/galaxy.idx";
+constexpr const char* PrebuiltIndexFileName = "galaxy.idx";
+constexpr const char* PrebuiltIndexCompanionJson = "galaxy.json";
 
 static bool IsIndexCurrent(const std::filesystem::path& idxPath)
 {
@@ -186,6 +189,52 @@ void DatabaseService::StartDownload(const std::string& url)
         currentFilePath = destPath.string();
         NotifyDownloadCompleted();
         StartExtractionAndValidation();
+    }).detach();
+}
+
+const char* DatabaseService::GetOfficialIndexUrl()
+{
+    return OfficialIndexUrl;
+}
+
+void DatabaseService::StartPrebuiltIndexDownload(const std::string& url)
+{
+    if (isBusy.load())
+    {
+        return;
+    }
+    if (url.empty())
+    {
+        NotifyDownloadFailed("Index URL is empty.");
+        return;
+    }
+    isBusy = true;
+    downloadProgress = 0.0f;
+    downloadSpeed = 0.0;
+
+    std::thread([this, url]() {
+        std::filesystem::path destPath = std::filesystem::path(searchDir) / PrebuiltIndexFileName;
+        bool success = downloader->Download(url, destPath.string(), ThreadCount);
+        isBusy = false;
+
+        if (!success)
+        {
+            std::error_code ec;
+            std::filesystem::remove(destPath, ec);
+            return;
+        }
+
+        if (!IsIndexCurrent(destPath))
+        {
+            std::error_code ec;
+            std::filesystem::remove(destPath, ec);
+            NotifyDownloadFailed("Downloaded file is not a valid or compatible index.");
+            return;
+        }
+
+        currentFilePath = (std::filesystem::path(searchDir) / PrebuiltIndexCompanionJson).string();
+        NotifyDownloadCompleted();
+        NotifyDatabaseReady(currentFilePath);
     }).detach();
 }
 
