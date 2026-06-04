@@ -2,6 +2,7 @@
 #include "ui/AppController.h"
 #include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
+#include "ui/states/SettingsState.h"
 #include "imgui.h"
 
 void WelcomeState::Render(AppController* controller)
@@ -23,6 +24,11 @@ void WelcomeState::Render(AppController* controller)
         {
             DatabaseService::GetInstance().EnterApplicationFlow();
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Settings", ImVec2(controller->GetTheme().buttonWidthMedium, controller->GetButtonHeightLarge())))
+        {
+            controller->TransitionTo(std::make_unique<SettingsState>());
+        }
         return;
     }
 
@@ -33,5 +39,10 @@ void WelcomeState::Render(AppController* controller)
     {
         DatabaseService::GetInstance().FetchOnlineSizes();
         controller->TransitionTo(std::make_unique<SelectDownloadState>());
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Settings", ImVec2(controller->GetTheme().buttonWidthMedium, controller->GetButtonHeightLarge())))
+    {
+        controller->TransitionTo(std::make_unique<SettingsState>());
     }
 }

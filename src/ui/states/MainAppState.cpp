@@ -2,6 +2,7 @@
 #include "ui/AppController.h"
 #include "download/DatabaseService.h"
 #include "ui/states/SelectDownloadState.h"
+#include "ui/states/SettingsState.h"
 #include "imgui.h"
 #include <filesystem>
 
@@ -71,6 +72,16 @@ void MainAppState::Render(AppController* controller)
     if (asyncSearch) asyncSearch->Poll();
 
     ImGui::TextColored(controller->GetTheme().orangePrimary, ":: COLONY FINDER - SYSTEM SEARCH");
+    ImGui::SameLine();
+    float settingsBtnWidth = controller->GetTheme().buttonWidthSmall;
+    ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - settingsBtnWidth);
+    if (ImGui::Button("Settings", ImVec2(settingsBtnWidth, controller->GetTheme().buttonHeightSmall)))
+    {
+        controller->TransitionTo(std::make_unique<SettingsState>([]() -> std::unique_ptr<IAppState> {
+            return std::make_unique<MainAppState>();
+        }));
+        return;
+    }
     ImGui::Separator();
     ImGui::Spacing();
 

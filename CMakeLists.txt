@@ -5,7 +5,7 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("ColonyFinder" VERSION 1.0.3)
+project ("ColonyFinder" VERSION 1.0.4)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Version.h.in
@@ -190,6 +190,8 @@ add_executable (ColonyFinder
     "src/ui/states/ErrorState.h"
     "src/ui/states/UpdateAvailableState.cpp"
     "src/ui/states/UpdateAvailableState.h"
+    "src/ui/states/SettingsState.cpp"
+    "src/ui/states/SettingsState.h"
     "src/update/UpdateObserver.h"
     "src/update/UpdateSubject.cpp"
     "src/update/UpdateSubject.h"

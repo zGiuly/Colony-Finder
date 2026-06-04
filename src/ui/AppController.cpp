@@ -201,6 +201,28 @@ void AppController::OnSettingsChanged(const std::string& downloadDirVal, const s
     DatabaseService::GetInstance().SetPaths(downloadDirVal, searchDirVal);
 }
 
+void AppController::OnThemeChanged(const ThemeColors& colors)
+{
+    theme.orangePrimary   = ImVec4(colors.orangePrimary.r,   colors.orangePrimary.g,   colors.orangePrimary.b,   colors.orangePrimary.a);
+    theme.orangeMuted     = ImVec4(colors.orangeMuted.r,     colors.orangeMuted.g,     colors.orangeMuted.b,     colors.orangeMuted.a);
+    theme.orangeActive    = ImVec4(colors.orangeActive.r,    colors.orangeActive.g,    colors.orangeActive.b,    colors.orangeActive.a);
+    theme.bgDark          = ImVec4(colors.bgDark.r,          colors.bgDark.g,          colors.bgDark.b,          colors.bgDark.a);
+    theme.bgPanel         = ImVec4(colors.bgPanel.r,         colors.bgPanel.g,         colors.bgPanel.b,         colors.bgPanel.a);
+    theme.textNormal      = ImVec4(colors.textNormal.r,      colors.textNormal.g,      colors.textNormal.b,      colors.textNormal.a);
+    theme.textMuted       = ImVec4(colors.textMuted.r,       colors.textMuted.g,       colors.textMuted.b,       colors.textMuted.a);
+    theme.textAlert       = ImVec4(colors.textAlert.r,       colors.textAlert.g,       colors.textAlert.b,       colors.textAlert.a);
+    theme.textSuccess     = ImVec4(colors.textSuccess.r,     colors.textSuccess.g,     colors.textSuccess.b,     colors.textSuccess.a);
+    theme.border          = ImVec4(colors.border.r,          colors.border.g,          colors.border.b,          colors.border.a);
+    theme.rowHover        = ImVec4(colors.rowHover.r,        colors.rowHover.g,        colors.rowHover.b,        colors.rowHover.a);
+    theme.rowHoverActive  = ImVec4(colors.rowHoverActive.r,  colors.rowHoverActive.g,  colors.rowHoverActive.b,  colors.rowHoverActive.a);
+    theme.rowSelected     = ImVec4(colors.rowSelected.r,     colors.rowSelected.g,     colors.rowSelected.b,     colors.rowSelected.a);
+    if (!ImGui::GetCurrentContext())
+    {
+        return;
+    }
+    AppTheme::Apply(theme);
+}
+
 void AppController::OnUpdateAvailable(const std::string& latestVersion, const std::string& downloadUrl)
 {
     if (!dynamic_cast<WelcomeState*>(currentState.get()))

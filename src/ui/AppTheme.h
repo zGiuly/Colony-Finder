@@ -48,13 +48,13 @@ struct AppTheme
         style.Colors[ImGuiCol_HeaderActive] = theme.orangePrimary;
         style.Colors[ImGuiCol_SliderGrab] = theme.orangePrimary;
         style.Colors[ImGuiCol_SliderGrabActive] = theme.orangeActive;
-        
+
         style.WindowRounding = 12.0f;
         style.FrameRounding = 6.0f;
         style.PopupRounding = 10.0f;
         style.ScrollbarRounding = 6.0f;
         style.GrabRounding = 6.0f;
-        
+
         style.WindowPadding = ImVec2(24.0f, 24.0f);
         style.FramePadding = ImVec2(12.0f, 8.0f);
         style.ItemSpacing = ImVec2(16.0f, 16.0f);

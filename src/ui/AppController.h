@@ -41,6 +41,7 @@ public:
     void OnIndexOutdated() override;
 
     void OnSettingsChanged(const std::string& downloadDir, const std::string& searchDir) override;
+    void OnThemeChanged(const ThemeColors& colors) override;
 
     void OnUpdateAvailable(const std::string& latestVersion, const std::string& downloadUrl) override;
     void OnUpdateNotAvailable() override;
