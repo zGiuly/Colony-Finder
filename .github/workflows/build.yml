@@ -40,12 +40,23 @@ jobs:
           restore-keys: linux-ccache-
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-             -DCMAKE_C_COMPILER_LAUNCHER=ccache
-             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        env:
+          CCACHE_DIR: /home/runner/.ccache
+        run: |
+          mkdir -p "$CCACHE_DIR"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
+        env:
+          CCACHE_DIR: /home/runner/.ccache
         run: cmake --build build --config Release -j
+
+      - name: ccache stats
+        env:
+          CCACHE_DIR: /home/runner/.ccache
+        run: ccache --show-stats
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

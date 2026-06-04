@@ -15,9 +15,9 @@
 constexpr int ThreadCount = 1;
 constexpr double ErrorSizeCode = -2.0;
 constexpr double DefaultInitSize = -1.0;
-constexpr const char* OfficialIndexUrl = "https://github.com/zGiuly/Colony-Finder/releases/latest/download/galaxy.idx";
-constexpr const char* PrebuiltIndexFileName = "galaxy.idx";
-constexpr const char* PrebuiltIndexCompanionJson = "galaxy.json";
+constexpr const char* OfficialIndexUrl = "https://github.com/zGiuly/Colony-Finder/releases/latest/download/galaxy_1month.idx";
+constexpr const char* PrebuiltIndexFileName = "galaxy_1month.idx";
+constexpr const char* PrebuiltIndexCompanionJson = "galaxy_1month.json";
 
 static bool IsIndexCurrent(const std::filesystem::path& idxPath)
 {
